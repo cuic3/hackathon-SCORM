@@ -37,6 +37,7 @@ function createFromMock(queues: Record<string, Array<{ data: unknown; error: unk
 function manifestXml(title = 'Hand Hygiene Basics') {
     return `<?xml version="1.0"?>
 <manifest identifier="COURSE-1" xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2">
+    <metadata><schema>ADL SCORM</schema><schemaversion>1.2</schemaversion></metadata>
     <organizations default="ORG-1">
         <organization identifier="ORG-1">
             <title>${title}</title>
@@ -148,7 +149,7 @@ describe('AdminUpload', () => {
         zip.file(
             'imsmanifest.xml',
             `<?xml version="1.0"?>
-<manifest><organizations default="ORG-1"><organization identifier="ORG-1"><item identifierref="RES-1" /></organization></organizations>
+<manifest><metadata><schemaversion>1.2</schemaversion></metadata><organizations default="ORG-1"><organization identifier="ORG-1"><item identifierref="RES-1" /></organization></organizations>
 <resources><resource identifier="RES-1" href="index.html" /></resources></manifest>`
         );
         const blob = await zip.generateAsync({ type: 'blob' });
@@ -169,6 +170,34 @@ describe('AdminUpload', () => {
         await waitFor(() =>
             expect(
                 screen.getByText("This file doesn't look like a SCORM package (missing imsmanifest.xml)")
+            ).toBeInTheDocument()
+        );
+        expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();
+    });
+
+    it('rejects a non-SCORM-1.2 package (e.g. SCORM 2004) with a version error', async () => {
+        fromMock.mockImplementation(() => createQueryBuilder({ data: [], error: null }));
+        render(<AdminUpload />);
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+
+        const zip = new JSZip();
+        zip.file(
+            'imsmanifest.xml',
+            `<?xml version="1.0"?>
+<manifest><metadata><schemaversion>2004 3rd Edition</schemaversion></metadata>
+<organizations default="ORG-1"><organization identifier="ORG-1"><item identifierref="RES-1" /></organization></organizations>
+<resources><resource identifier="RES-1" href="index.html" /></resources></manifest>`
+        );
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const file = new File([blob], 'course2004.zip', { type: 'application/zip' });
+
+        await userEvent.upload(screen.getByLabelText('SCORM package (.zip)'), file);
+
+        await waitFor(() =>
+            expect(
+                screen.getByText(
+                    'This app only supports SCORM 1.2 packages. Found schema version "2004 3rd Edition".'
+                )
             ).toBeInTheDocument()
         );
         expect(screen.queryByLabelText('Title')).not.toBeInTheDocument();

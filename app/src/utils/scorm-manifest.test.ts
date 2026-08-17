@@ -17,15 +17,22 @@ function manifestXml({
     resources = `
         <resource identifier="RES-1" href="index.html" />
     `,
+    schemaVersion = '1.2',
 }: {
     organizationsDefault?: string | null;
     organizations?: string;
     resources?: string;
+    schemaVersion?: string | null;
 } = {}): string {
     const defaultAttr =
         organizationsDefault === null ? '' : `default="${organizationsDefault}"`;
+    const metadata =
+        schemaVersion === null
+            ? ''
+            : `<metadata><schema>ADL SCORM</schema><schemaversion>${schemaVersion}</schemaversion></metadata>`;
     return `<?xml version="1.0"?>
 <manifest identifier="COURSE-1" xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2">
+    ${metadata}
     <organizations ${defaultAttr}>
         ${organizations}
     </organizations>
@@ -121,6 +128,32 @@ describe('parseManifest', () => {
         expect(result.title).toBe('First');
     });
 
+    it('accepts a manifest that declares schema version 1.2', () => {
+        expect(() => parseManifest(manifestXml({ schemaVersion: '1.2' }))).not.toThrow();
+    });
+
+    it('rejects a SCORM 1.1 manifest', () => {
+        expect(() => parseManifest(manifestXml({ schemaVersion: '1.1' }))).toThrow(
+            'This app only supports SCORM 1.2 packages. Found schema version "1.1".'
+        );
+    });
+
+    it('rejects a SCORM 2004 manifest', () => {
+        expect(() => parseManifest(manifestXml({ schemaVersion: '2004 3rd Edition' }))).toThrow(
+            'This app only supports SCORM 1.2 packages. Found schema version "2004 3rd Edition".'
+        );
+    });
+
+    it('rejects a manifest with no <schemaversion> element at all', () => {
+        expect(() => parseManifest(manifestXml({ schemaVersion: null }))).toThrow(
+            'This app only supports SCORM 1.2 packages. Found schema version "unknown".'
+        );
+    });
+
+    it('trims whitespace around the schema version before comparing', () => {
+        expect(() => parseManifest(manifestXml({ schemaVersion: '  1.2  ' }))).not.toThrow();
+    });
+
     it('throws when the XML is not well-formed', () => {
         expect(() => parseManifest('<manifest><unterminated>')).toThrow(
             "This SCORM package's imsmanifest.xml could not be parsed."
@@ -130,7 +163,7 @@ describe('parseManifest', () => {
     it('throws when there are no organization elements', () => {
         expect(() =>
             parseManifest(`<?xml version="1.0"?>
-<manifest><organizations></organizations><resources></resources></manifest>`)
+<manifest><metadata><schemaversion>1.2</schemaversion></metadata><organizations></organizations><resources></resources></manifest>`)
         ).toThrow("This SCORM package's manifest doesn't specify a launchable file.");
     });
 
