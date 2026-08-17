@@ -51,6 +51,7 @@ const AdminUpload = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [durationMinutes, setDurationMinutes] = useState('');
+    const [sourceInstitution, setSourceInstitution] = useState('');
     const [parseError, setParseError] = useState<string | null>(null);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -77,6 +78,7 @@ const AdminUpload = () => {
         setTitle('');
         setDescription('');
         setDurationMinutes('');
+        setSourceInstitution('');
         setParseError(null);
     };
 
@@ -118,6 +120,7 @@ const AdminUpload = () => {
                     title,
                     description: description || null,
                     duration_minutes: durationMinutes ? Number(durationMinutes) : null,
+                    source_institution: sourceInstitution.trim() || null,
                     package_id: packageId,
                     launch_path: manifest.launchPath,
                     manifest_title: manifest.title,
@@ -217,6 +220,15 @@ const AdminUpload = () => {
                                 onChange={(event) => setDurationMinutes(event.target.value)}
                             />
                         </label>
+                        <label className={`${baseClassName}__field`}>
+                            <span>Source institution (optional)</span>
+                            <input
+                                type="text"
+                                placeholder="e.g. Johns Hopkins Hospital"
+                                value={sourceInstitution}
+                                onChange={(event) => setSourceInstitution(event.target.value)}
+                            />
+                        </label>
                         {uploadError ? (
                             <p className={`${baseClassName}__error`} role="alert">
                                 {uploadError}
@@ -254,6 +266,9 @@ const AdminUpload = () => {
                                             <Badge content="Deactivated" type="subtle" />
                                         )}
                                     </div>
+                                    <p className={`${baseClassName}__list__source`}>
+                                        Source: {lesson.source_institution ?? 'Unknown'}
+                                    </p>
                                     {lesson.description ? <p>{lesson.description}</p> : null}
                                     {lesson.is_active ? (
                                         <Button

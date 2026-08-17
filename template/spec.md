@@ -45,6 +45,8 @@ This file doesn't look like a SCORM package (missing imsmanifest.xml)
 ```
 Exact wording is an example, not necessarily verbatim-required, but MUST clearly state the missing-manifest reason.
 
+**Scope addition — source institution (confirmed with Michelle Zuckerberg):** the brief's underlying motivation (§1) is that many different customer institutions each bring their own SCORM content — P1 simplified this to one seeded organization (A3), but a custom-uploaded lesson MAY additionally record which real institution it represents, as a free-text, admin-entered, display-only attribution (e.g. "Johns Hopkins Hospital"). This does not change A3 or require multiple real organizations/logins — it is a label on the lesson, not a data-model change to who can log in or what they can see. No source entered → displays as "Unknown". Only applies to `custom`-origin lessons; Elsevier-origin lessons don't show this field.
+
 ### 3.2 Complete a lesson (US-2, P1)
 | AC ID | Given | When | Then |
 |---|---|---|---|
@@ -120,6 +122,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 - [ ] Custom + seeded Elsevier lesson shown together → origin must stay visually unambiguous.
 - [ ] Learner exits mid-lesson (`cmi.core.exit = "suspend"` + bookmarked location) → relaunch resumes at bookmark, not restart.
 - [ ] A lesson (either origin) has no `package_id`/`launch_path` set → show a "content not yet available" placeholder; MUST NOT attempt to render an iframe or construct a SCORM adapter for it.
+- [ ] A custom lesson is uploaded with no source institution entered → displays as "Unknown", never blank; Elsevier-origin lessons never show a source institution value at all.
 
 ## 9. Verify Table
 Fill this in at feature freeze by re-testing every AC above against the running system. Do not invent new IDs — use the ones defined in §3.
@@ -147,6 +150,7 @@ These were introduced after the original verification table was drafted (login f
 | US-3.4 | Educator login reaches report view | PASS / FAIL | |
 | US-3.5 | No-score lesson shows "Completed — no score reported" | PASS / FAIL | |
 | US-4.2 | Backend audit log records content changes, not exposed in report | PASS / FAIL | |
+| US-1.5 | Custom lesson's source institution is captured on upload and displayed (or "Unknown" if blank); not shown for Elsevier lessons | PASS / FAIL | Blocked on the `source_institution` migration being applied — see plan.md §2.8 |
 
 ## 10. Working Agreement
 - Never guess a requirement, value, mapping, or business rule — leave it explicit as TODO/unknown/assumption and ask.

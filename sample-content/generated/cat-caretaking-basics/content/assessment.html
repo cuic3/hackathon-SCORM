@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Knowledge Check</title>
+    <link rel="stylesheet" type="text/css" href="../shared/style.css" />
+    <script type="text/javascript">
+        //Each question: text, array of answer choices, index of the correct choice.
+        var questions = [
+            {
+                text: "How many litter boxes should a household with 2 cats have, following the 'n+1' rule?",
+                answers: ["1", "2", "3", "4"],
+                correctIndex: 2
+            },
+            {
+                text: "Which common food is a genuine veterinary emergency risk for cats, even in small amounts?",
+                answers: ["Cooked chicken", "Lily plants/pollen", "Plain rice", "Catnip"],
+                correctIndex: 1
+            },
+            {
+                text: "A sudden change in litter box habits, especially straining to urinate, is most concerning in which animal?",
+                answers: ["Female cats only", "Male cats", "Kittens under 8 weeks only", "It is never urgent"],
+                correctIndex: 1
+            },
+            {
+                text: "Why do cats often hide illness until it becomes serious?",
+                answers: [
+                    "They are naturally lazy",
+                    "An instinct to not appear weak, inherited from being both predator and prey in the wild",
+                    "They dislike their owners",
+                    "Cats cannot feel pain"
+                ],
+                correctIndex: 1
+            },
+            {
+                text: "Around what age are kittens typically spayed or neutered?",
+                answers: ["2-3 weeks", "4-6 months", "3-4 years", "It is not recommended for cats"],
+                correctIndex: 1
+            }
+        ];
+
+        function renderTest(){
+            var container = document.getElementById("test");
+            var html = "";
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                html += "<div class='question' id='q" + i + "'>";
+                html += "<p class='q-text'>" + (i + 1) + ". " + q.text + "</p>";
+                for (var a = 0; a < q.answers.length; a++){
+                    html += "<div class='answer'><label>";
+                    html += "<input type='radio' name='question_" + i + "' value='" + a + "'/> ";
+                    html += q.answers[a];
+                    html += "</label></div>";
+                }
+                html += "</div>";
+            }
+            container.innerHTML = html;
+        }
+
+        function submitAnswers(){
+            var correctCount = 0;
+
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                var selected = document.getElementsByName("question_" + i);
+                var learnerAnswer = -1;
+                for (var s = 0; s < selected.length; s++){
+                    if (selected[s].checked){
+                        learnerAnswer = parseInt(selected[s].value, 10);
+                    }
+                }
+                if (learnerAnswer == q.correctIndex){
+                    correctCount++;
+                }
+            }
+
+            var score = Math.round((correctCount / questions.length) * 100);
+            var resultsDiv = document.getElementById("results");
+            var passed = score >= 70;
+
+            resultsDiv.className = passed ? "pass" : "fail";
+            resultsDiv.innerHTML = "<h3>Your score: " + score + "%</h3>" +
+                "<p>You answered " + correctCount + " out of " + questions.length + " questions correctly.</p>" +
+                "<p>" + (passed ? "You passed this assessment." : "You did not reach the 70% passing threshold. Review the material and try again if you'd like, but your result has been recorded.") + "</p>";
+            resultsDiv.style.display = "block";
+
+            document.getElementById("submitBtn").disabled = true;
+
+            //hand the score up to the launch page, which records it against the LMS
+            //via cmi.core.score.raw / cmi.core.lesson_status (mirrors the reference
+            //sample's parent.RecordTest(score) pattern).
+            if (parent && parent.RecordTest){
+                parent.RecordTest(score);
+            }
+        }
+
+        window.onload = function(){
+            renderTest();
+        };
+    </script>
+</head>
+<body>
+    <div class="page-wrap">
+        <h1>Knowledge Check: Cat Caretaking Basics</h1>
+        <p>Answer all questions, then submit to see your score. You need 70% or higher to pass.</p>
+        <div id="test"></div>
+        <input type="button" id="submitBtn" value="Submit Answers" onclick="submitAnswers();" />
+        <div id="results" style="display:none;"></div>
+    </div>
+</body>
+</html>

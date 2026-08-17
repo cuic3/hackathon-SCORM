@@ -138,6 +138,7 @@ const Lesson = () => {
                 lessonId: lesson.id,
                 lessonTitleSnapshot: lesson.title,
                 lessonOriginSnapshot: lesson.origin as LessonOrigin,
+                sourceInstitutionSnapshot: lesson.source_institution,
                 accessToken,
                 seed: completion
                     ? {

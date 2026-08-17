@@ -12,6 +12,7 @@ interface ReportRow {
     learnerName: string;
     lessonTitle: string;
     origin: LessonOrigin;
+    sourceInstitution: string | null;
     status: CompletionStatus;
     scoreRaw: number | null;
     scoreMin: number | null;
@@ -35,7 +36,7 @@ const Report = () => {
             const { data } = await supabase
                 .from('lesson_completions')
                 .select(
-                    'id, lesson_title_snapshot, lesson_origin_snapshot, status, score_raw, score_min, score_max, learner:profiles!lesson_completions_learner_id_fkey(display_name)'
+                    'id, lesson_title_snapshot, lesson_origin_snapshot, source_institution_snapshot, status, score_raw, score_min, score_max, learner:profiles!lesson_completions_learner_id_fkey(display_name)'
                 )
                 .order('lesson_title_snapshot');
 
@@ -45,6 +46,7 @@ const Report = () => {
                     learnerName: row.learner?.display_name ?? 'Unknown learner',
                     lessonTitle: row.lesson_title_snapshot,
                     origin: row.lesson_origin_snapshot,
+                    sourceInstitution: row.source_institution_snapshot,
                     status: row.status,
                     scoreRaw: row.score_raw,
                     scoreMin: row.score_min,
@@ -75,6 +77,7 @@ const Report = () => {
                             <th>Learner</th>
                             <th>Lesson</th>
                             <th>Origin</th>
+                            <th>Source</th>
                             <th>Status</th>
                             <th>Score</th>
                         </tr>
@@ -90,6 +93,11 @@ const Report = () => {
                                     ) : (
                                         'Elsevier'
                                     )}
+                                </td>
+                                <td>
+                                    {row.origin === 'custom'
+                                        ? row.sourceInstitution ?? 'Unknown'
+                                        : '—'}
                                 </td>
                                 <td>{STATUS_LABEL[toDisplayStatus(row.status)]}</td>
                                 <td>

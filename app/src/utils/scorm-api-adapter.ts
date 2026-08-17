@@ -64,6 +64,8 @@ export interface ScormApiAdapterArgs {
     lessonId: string;
     lessonTitleSnapshot: string;
     lessonOriginSnapshot: LessonOrigin;
+    /** Denormalized so the report never has to live-join `lessons` for it (see lesson_title_snapshot). */
+    sourceInstitutionSnapshot: string | null;
     /** Prior completion state to resume from, or null on first launch. */
     seed: CompletionSeed | null;
     /** Learner's current Supabase access token, for the unload-safe keepalive flush. */
@@ -75,6 +77,7 @@ interface CompletionRow {
     lesson_id: string;
     lesson_title_snapshot: string;
     lesson_origin_snapshot: LessonOrigin;
+    source_institution_snapshot: string | null;
     status: CompletionStatus;
     score_raw: number | null;
     score_min: number | null;
@@ -106,6 +109,7 @@ export class ScormApiAdapter {
     private readonly lessonId: string;
     private readonly lessonTitleSnapshot: string;
     private readonly lessonOriginSnapshot: LessonOrigin;
+    private readonly sourceInstitutionSnapshot: string | null;
     private readonly accessToken: string;
 
     constructor(args: ScormApiAdapterArgs) {
@@ -113,6 +117,7 @@ export class ScormApiAdapter {
         this.lessonId = args.lessonId;
         this.lessonTitleSnapshot = args.lessonTitleSnapshot;
         this.lessonOriginSnapshot = args.lessonOriginSnapshot;
+        this.sourceInstitutionSnapshot = args.sourceInstitutionSnapshot;
         this.accessToken = args.accessToken;
 
         const seed = args.seed;
@@ -246,6 +251,7 @@ export class ScormApiAdapter {
             lesson_id: this.lessonId,
             lesson_title_snapshot: this.lessonTitleSnapshot,
             lesson_origin_snapshot: this.lessonOriginSnapshot,
+            source_institution_snapshot: this.sourceInstitutionSnapshot,
             status,
             score_raw: rawScore === '' ? null : Number(rawScore),
             score_min: minScore === '' ? null : Number(minScore),

@@ -81,6 +81,7 @@ export type Database = {
           score_min: number | null
           score_raw: number | null
           session_time: string | null
+          source_institution_snapshot: string | null
           status: string
         }
         Insert: {
@@ -99,6 +100,7 @@ export type Database = {
           score_min?: number | null
           score_raw?: number | null
           session_time?: string | null
+          source_institution_snapshot?: string | null
           status: string
         }
         Update: {
@@ -117,6 +119,7 @@ export type Database = {
           score_min?: number | null
           score_raw?: number | null
           session_time?: string | null
+          source_institution_snapshot?: string | null
           status?: string
         }
         Relationships: [
@@ -149,6 +152,7 @@ export type Database = {
           origin: string
           package_id: string | null
           replaces_lesson_id: string | null
+          source_institution: string | null
           superseded_by_lesson_id: string | null
           title: string
           updated_at: string
@@ -166,6 +170,7 @@ export type Database = {
           origin: string
           package_id?: string | null
           replaces_lesson_id?: string | null
+          source_institution?: string | null
           superseded_by_lesson_id?: string | null
           title: string
           updated_at?: string
@@ -183,6 +188,7 @@ export type Database = {
           origin?: string
           package_id?: string | null
           replaces_lesson_id?: string | null
+          source_institution?: string | null
           superseded_by_lesson_id?: string | null
           title?: string
           updated_at?: string

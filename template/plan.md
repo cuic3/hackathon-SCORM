@@ -59,6 +59,7 @@ create table lessons (
   package_id text,               -- storage folder key; null for elsevier rows
   launch_path text,              -- e.g. 'shared/launchpage.html'; null for elsevier rows
   manifest_title text,           -- raw title parsed from imsmanifest.xml
+  source_institution text,       -- admin-entered, e.g. 'Johns Hopkins Hospital'; null = unknown; only meaningful for custom rows
   uploaded_by uuid references profiles(id),
   replaces_lesson_id uuid references lessons(id),
   superseded_by_lesson_id uuid references lessons(id),
@@ -72,6 +73,7 @@ create table lesson_completions (
   lesson_id uuid not null references lessons(id),   -- default RESTRICT: can't hard-delete a lesson with completions
   lesson_title_snapshot text not null,
   lesson_origin_snapshot text not null check (lesson_origin_snapshot in ('elsevier','custom')),
+  source_institution_snapshot text,  -- denormalized from lessons.source_institution, same rationale as the title/origin snapshots
   status text not null check (status in ('not-started','incomplete','completed','passed','failed')),
   score_raw numeric,
   score_min numeric,
@@ -161,6 +163,16 @@ Used at every site that previously branched on origin: the adapter-creation `use
 1. **Generate** — the `.claude/skills/generate-scorm-lessons/` skill authors real SCORM 1.2 `.zip` packages (manifest + `shared/scormfunctions.js` copied verbatim + real interactive multi-page content + a scored assessment) for each title, output under `sample-content/generated/`. The skill only produces files + a summary; it never touches the DB itself.
 2. **Backfill** — `app/scripts/seed-elsevier-content.mjs` (new, checked-in, reusable), run via `node --env-file=.env scripts/seed-elsevier-content.mjs` from `app/`. For each generated package: creates a service-role `supabase-js` client (same trust model as `scorm-content-proxy.ts` — bypasses RLS, key never reaches the browser), generates a fresh `packageId` (`crypto.randomUUID()`), unzips with `JSZip` and uploads every file to Storage bucket `content` at `{packageId}/{relativePath}` (reusing `mimeTypeFor` from `app/src/utils/mime-types.ts`, `upsert: true` so reruns are safe), then updates that lesson's `package_id`/`launch_path`/`manifest_title` by its known row id. Launch path/manifest title per package are taken from the skill's own generation summary rather than re-parsed from XML in Node, to avoid adding an XML-parsing dependency for a one-off/occasional-use script. This script is kept (not deleted after first run) since the skill's own stated purpose is to expand the seeded catalog again later.
 
+### 2.8 Source institution tracking (new)
+
+Per `spec.md` §3.1's scope note, the brief's underlying motivation is that many different customer institutions each bring their own SCORM content — the P1 demo simplified this to one seeded organization (assumption A3), but a custom-uploaded lesson can still carry which real institution it represents, as a display-only attribution rather than a real multi-tenant data model:
+
+- `lessons.source_institution` (nullable text) — admin-entered free text on upload (`app/src/pages/admin-upload/admin-upload.tsx`), e.g. "Johns Hopkins Hospital". Only meaningful for `origin='custom'` rows; `null` displays as "Unknown".
+- `lesson_completions.source_institution_snapshot` — denormalized at completion-write time in `scorm-api-adapter.ts`, same rationale as `lesson_title_snapshot`/`lesson_origin_snapshot` (§2.1): the report reads completions, not a live join to `lessons`, so a lesson's source institution can't retroactively change a learner's historical report row.
+- Displayed in the admin's own lesson list (admin-upload.tsx) and as a "Source" column in the unified report (`report.tsx`), shown only for custom rows (Elsevier rows show `—`, since the concept doesn't apply to them).
+
+**Manual step required:** this needs a live schema migration (`alter table lessons add column source_institution text;` and `alter table lesson_completions add column source_institution_snapshot text;`) applied via the Supabase MCP tooling or dashboard SQL editor — not run yet as of this plan update, since this session has no live DB/MCP access. Code assumes the column exists; uploads/completions will fail until someone with access applies it.
+
 ## 3. Key Decisions
 - Built as a **separate standalone project** (`hackathon-SCORM/app`), not inside `ecl-neuron-app` — matches the spec's "standalone demonstrator" constraint and avoids touching the production CLH codebase.
 - Reused the **real** `@els/*` packages (not a hand-rolled copy of the tokens) since this machine already has Artifactory registry access — keeps the visual language authentic with minimal maintenance.
@@ -190,6 +202,7 @@ Used at every site that previously branched on origin: the adapter-creation `use
 2. **Thin end-to-end loop** (demo-critical path): real login/route guards (§2.5) → admin upload, hardcoded to the one sample package first (§2.3) → content proxy plugin (§2.2) → SCORM adapter + lesson launch (§2.4) → persistence wiring → report page (§2.6). Manually verify the full loop once: admin uploads → learner completes → educator sees it next to seeded rows.
 3. **Required edge cases** (spec §8): resume-from-bookmark verification, deactivate button + audit log, missing-manifest rejection message, admin-only audit log view.
 4. **Polish**: full re-upload/replace flow, multiple learners/packages if time allows, upload UX polish.
+5. **Source institution tracking** (§2.8): apply the schema migration (blocking — not yet run), then the code is already wired.
 5. **Elsevier real playback**: generalize the SCORM player to any origin with package content; author + backfill real Elsevier packages (see §2.7).
 
 ## Verification
