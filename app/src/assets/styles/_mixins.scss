@@ -1,0 +1,58 @@
+@use 'sass:map';
+
+@mixin display-flex {
+    display: -ms-flexbox;
+    display: flex;
+}
+@mixin flex-direction($v) {
+    -ms-flex-direction: $v;
+    flex-direction: $v;
+}
+@mixin justify-content($v) {
+    $msV: map.get(
+        (
+            flex-start: start,
+            flex-end: end,
+            center: center,
+            space-around: distribute,
+            space-between: justify,
+        ),
+        $v
+    );
+
+    -ms-flex-pack: $msV;
+    justify-content: $v;
+}
+@mixin align-items($v) {
+    $msV: map.get(
+        (
+            flex-start: start,
+            flex-end: end,
+            center: center,
+            stretch: stretch,
+            baseline: baseline,
+        ),
+        $v
+    );
+
+    -ms-flex-align: $msV;
+    align-items: $v;
+}
+
+@mixin for-xs-device {
+    @media (max-width: 599px) {
+        @content;
+    }
+}
+
+@mixin for-small-device {
+    @media (min-width: 600px) and (max-width: 899px) {
+        @content;
+    }
+}
+
+@mixin for-desktop-device {
+    @media (min-width: 1200px) {
+        @content;
+    }
+}

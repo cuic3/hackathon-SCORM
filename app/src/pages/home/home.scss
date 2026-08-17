@@ -1,0 +1,51 @@
+@use '@els/els-styleguide-core/scss/tools';
+@use '../../assets/styles/mixins' as *;
+
+.home {
+    width: 85%;
+    padding: 1rem 2.5rem;
+    margin: 0 auto;
+
+    &__subtitle {
+        font-size: 1rem;
+        font-weight: 400;
+        color: tools.$els-color-n6;
+    }
+
+    &__section {
+        margin-top: 2rem;
+
+        &-title {
+            font-size: 1.25rem;
+        }
+    }
+
+    &__cards {
+        @include display-flex;
+        @include flex-direction(row);
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-top: 1rem;
+
+        > * {
+            width: calc(50% - 0.75rem);
+        }
+    }
+
+    @include for-small-device {
+        width: 100%;
+        padding: 1.25rem;
+
+        &__cards > * {
+            width: 100%;
+        }
+    }
+
+    @include for-xs-device {
+        padding: 1rem;
+
+        &__cards > * {
+            width: 100%;
+        }
+    }
+}

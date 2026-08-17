@@ -1,0 +1,45 @@
+@use '@els/els-styleguide-core/scss/tools';
+@use '../../assets/styles/mixins' as *;
+
+.app-shell {
+    min-height: 100%;
+    @include display-flex;
+    @include flex-direction(column);
+
+    &__header {
+        &__wordmark {
+            font-weight: 700;
+        }
+    }
+
+    &__nav {
+        &__list {
+            @include display-flex;
+            @include flex-direction(row);
+            gap: 1.5rem;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        &__link {
+            color: tools.$els-color-text;
+            text-decoration: none;
+            font-weight: 600;
+
+            &:hover {
+                color: tools.$els-color-primary;
+            }
+
+            &--active {
+                color: tools.$els-color-primary;
+                border-bottom: 0.1875rem solid tools.$els-color-primary;
+            }
+        }
+    }
+
+    &__body {
+        flex: 1 0 auto;
+        width: 100%;
+    }
+}
