@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Knowledge Check</title>
+    <link rel="stylesheet" type="text/css" href="../shared/style.css" />
+    <script type="text/javascript">
+        var questions = [
+            {
+                text: "Why is timely infection control documentation important?",
+                answers: [
+                    "It has no real effect on patient care",
+                    "It ensures the next shift and other staff know what precautions to follow",
+                    "It is only needed for billing purposes",
+                    "It replaces the need for actual precautions"
+                ],
+                correctIndex: 1
+            },
+            {
+                text: "When should infection control documentation ideally be completed?",
+                answers: [
+                    "At the very end of the week",
+                    "From memory at the end of a shift",
+                    "At the time care is given",
+                    "Only if an audit is scheduled"
+                ],
+                correctIndex: 2
+            },
+            {
+                text: "Which precaution category requires a fit-tested N95 or equivalent respirator?",
+                answers: ["Standard precautions", "Contact precautions", "Droplet precautions", "Airborne precautions"],
+                correctIndex: 3
+            },
+            {
+                text: "Which precaution category is used for organisms spread by direct or indirect contact, such as certain multidrug-resistant organisms?",
+                answers: ["Airborne precautions", "Contact precautions", "Droplet precautions", "No precautions needed"],
+                correctIndex: 1
+            },
+            {
+                text: "What should be documented when transmission-based precautions are discontinued?",
+                answers: [
+                    "Nothing further is needed",
+                    "Only the patient's discharge date",
+                    "The date, time, and reason precautions were discontinued",
+                    "The name of the cleaning staff only"
+                ],
+                correctIndex: 2
+            }
+        ];
+
+        function renderTest(){
+            var container = document.getElementById("test");
+            var html = "";
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                html += "<div class='question' id='q" + i + "'>";
+                html += "<p class='q-text'>" + (i + 1) + ". " + q.text + "</p>";
+                for (var a = 0; a < q.answers.length; a++){
+                    html += "<div class='answer'><label>";
+                    html += "<input type='radio' name='question_" + i + "' value='" + a + "'/> ";
+                    html += q.answers[a];
+                    html += "</label></div>";
+                }
+                html += "</div>";
+            }
+            container.innerHTML = html;
+        }
+
+        function submitAnswers(){
+            var correctCount = 0;
+
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                var selected = document.getElementsByName("question_" + i);
+                var learnerAnswer = -1;
+                for (var s = 0; s < selected.length; s++){
+                    if (selected[s].checked){
+                        learnerAnswer = parseInt(selected[s].value, 10);
+                    }
+                }
+                if (learnerAnswer == q.correctIndex){
+                    correctCount++;
+                }
+            }
+
+            var score = Math.round((correctCount / questions.length) * 100);
+            var resultsDiv = document.getElementById("results");
+            var passed = score >= 70;
+
+            resultsDiv.className = passed ? "pass" : "fail";
+            resultsDiv.innerHTML = "<h3>Your score: " + score + "%</h3>" +
+                "<p>You answered " + correctCount + " out of " + questions.length + " questions correctly.</p>" +
+                "<p>" + (passed ? "You passed this assessment." : "You did not reach the 70% passing threshold. Review the material and try again if you'd like, but your result has been recorded.") + "</p>";
+            resultsDiv.style.display = "block";
+
+            document.getElementById("submitBtn").disabled = true;
+
+            if (parent && parent.RecordTest){
+                parent.RecordTest(score);
+            }
+        }
+
+        window.onload = function(){
+            renderTest();
+        };
+    </script>
+</head>
+<body>
+    <div class="page-wrap">
+        <h1>Knowledge Check: Infection Control Documentation</h1>
+        <p>Answer all questions, then submit to see your score. You need 70% or higher to pass.</p>
+        <div id="test"></div>
+        <input type="button" id="submitBtn" value="Submit Answers" onclick="submitAnswers();" />
+        <div id="results" style="display:none;"></div>
+    </div>
+</body>
+</html>

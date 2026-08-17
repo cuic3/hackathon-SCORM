@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Knowledge Check</title>
+    <link rel="stylesheet" type="text/css" href="../shared/style.css" />
+    <script type="text/javascript">
+        var questions = [
+            {
+                text: "Which of the following is one of the original Five Rights of medication administration?",
+                answers: ["Right documentation only", "Right patient", "Right insurance", "Right shift"],
+                correctIndex: 1
+            },
+            {
+                text: "Verifying patient identity should be done using:",
+                answers: [
+                    "Room number alone",
+                    "A quick visual glance",
+                    "At least two identifiers, such as name and date of birth",
+                    "The patient's first name only"
+                ],
+                correctIndex: 2
+            },
+            {
+                text: "What is a well-documented risk factor for medication errors during preparation?",
+                answers: ["Working in a quiet room", "Being interrupted mid-task", "Double-checking calculations", "Using barcode scanning"],
+                correctIndex: 1
+            },
+            {
+                text: "Which of these is considered a high-alert medication category?",
+                answers: ["Multivitamins", "Insulin", "Oral rehydration salts", "Topical moisturizer"],
+                correctIndex: 1
+            },
+            {
+                text: "A true independent double-check means:",
+                answers: [
+                    "The second clinician simply agrees with the first clinician's answer",
+                    "Only one clinician is needed for high-alert drugs",
+                    "The second clinician performs their own calculation and comparison separately",
+                    "Double-checks are optional if the clinician is experienced"
+                ],
+                correctIndex: 2
+            }
+        ];
+
+        function renderTest(){
+            var container = document.getElementById("test");
+            var html = "";
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                html += "<div class='question' id='q" + i + "'>";
+                html += "<p class='q-text'>" + (i + 1) + ". " + q.text + "</p>";
+                for (var a = 0; a < q.answers.length; a++){
+                    html += "<div class='answer'><label>";
+                    html += "<input type='radio' name='question_" + i + "' value='" + a + "'/> ";
+                    html += q.answers[a];
+                    html += "</label></div>";
+                }
+                html += "</div>";
+            }
+            container.innerHTML = html;
+        }
+
+        function submitAnswers(){
+            var correctCount = 0;
+
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                var selected = document.getElementsByName("question_" + i);
+                var learnerAnswer = -1;
+                for (var s = 0; s < selected.length; s++){
+                    if (selected[s].checked){
+                        learnerAnswer = parseInt(selected[s].value, 10);
+                    }
+                }
+                if (learnerAnswer == q.correctIndex){
+                    correctCount++;
+                }
+            }
+
+            var score = Math.round((correctCount / questions.length) * 100);
+            var resultsDiv = document.getElementById("results");
+            var passed = score >= 70;
+
+            resultsDiv.className = passed ? "pass" : "fail";
+            resultsDiv.innerHTML = "<h3>Your score: " + score + "%</h3>" +
+                "<p>You answered " + correctCount + " out of " + questions.length + " questions correctly.</p>" +
+                "<p>" + (passed ? "You passed this assessment." : "You did not reach the 70% passing threshold. Review the material and try again if you'd like, but your result has been recorded.") + "</p>";
+            resultsDiv.style.display = "block";
+
+            document.getElementById("submitBtn").disabled = true;
+
+            if (parent && parent.RecordTest){
+                parent.RecordTest(score);
+            }
+        }
+
+        window.onload = function(){
+            renderTest();
+        };
+    </script>
+</head>
+<body>
+    <div class="page-wrap">
+        <h1>Knowledge Check: Medication Safety Fundamentals</h1>
+        <p>Answer all questions, then submit to see your score. You need 70% or higher to pass.</p>
+        <div id="test"></div>
+        <input type="button" id="submitBtn" value="Submit Answers" onclick="submitAnswers();" />
+        <div id="results" style="display:none;"></div>
+    </div>
+</body>
+</html>

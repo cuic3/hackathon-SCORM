@@ -45,10 +45,10 @@ This file doesn't look like a SCORM package (missing imsmanifest.xml)
 ```
 Exact wording is an example, not necessarily verbatim-required, but MUST clearly state the missing-manifest reason.
 
-### 3.2 Complete a custom lesson (US-2, P1)
+### 3.2 Complete a lesson (US-2, P1)
 | AC ID | Given | When | Then |
 |---|---|---|---|
-| US-2.1 | A custom SCORM 1.2 lesson is available | Learner launches it | The real SCORM lesson runs (real runtime, not a mock screen) |
+| US-2.1 | A SCORM 1.2 lesson is available (custom-uploaded or seeded Elsevier content — see §3.3 scope update) | Learner launches it | The real SCORM lesson runs (real runtime, not a mock screen) |
 | US-2.2 | Learner completes the lesson; package reports completion + score | Session finishes | Completion and score are recorded for that learner |
 
 **Runtime contract (MUST implement, see §5 for full technical detail):**
@@ -67,6 +67,8 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 **Display rule (MUST):** wherever a score is shown, display both percentage and raw value, e.g. `"78% (78/100)"`.
 
 **Seed data requirement:** seed 3–5 Elsevier lesson records with mixed states (some completed with scores, some incomplete, some not started) so the report doesn't look sparse.
+
+**Scope update (confirmed with Rory Myers):** Elsevier-origin lessons are also packaged and played as real SCORM 1.2 content, using the identical format and runtime pipeline as admin-uploaded custom lessons (same `imsmanifest.xml` structure, same `window.API` contract, same content-proxy serving path). This does not change the "synthetic/seeded, no real CLH integration" rule in §4 — the content itself is still authored by the team as demo material, not sourced from a real Elsevier system; it is simply packaged as a genuinely interactive SCO instead of a static completion row. Origin (`elsevier` vs `custom`) remains a data-model distinction (`lessons.origin`, display badge) independent of how the content happens to be authored or delivered.
 
 ### 3.4 Preserve recorded completion history (US-4, P1)
 | AC ID | Given | When | Then |
@@ -117,6 +119,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 - [ ] Previously completed lesson's content is re-uploaded/deactivated → historical completion still visible, unchanged.
 - [ ] Custom + seeded Elsevier lesson shown together → origin must stay visually unambiguous.
 - [ ] Learner exits mid-lesson (`cmi.core.exit = "suspend"` + bookmarked location) → relaunch resumes at bookmark, not restart.
+- [ ] A lesson (either origin) has no `package_id`/`launch_path` set → show a "content not yet available" placeholder; MUST NOT attempt to render an iframe or construct a SCORM adapter for it.
 
 ## 9. Verify Table
 Fill this in at feature freeze by re-testing every AC above against the running system. Do not invent new IDs — use the ones defined in §3.
@@ -125,7 +128,7 @@ Fill this in at feature freeze by re-testing every AC above against the running 
 |---|---|---|---|
 | US-1.1 | Valid SCORM 1.2 ZIP becomes a custom lesson | PASS / FAIL | |
 | US-1.2 | Custom lesson origin is distinguishable | PASS / FAIL | |
-| US-2.1 | Learner launches real SCORM content | PASS / FAIL | |
+| US-2.1 | Learner launches real SCORM content | PASS / FAIL | Verify against both a custom-uploaded lesson and a seeded Elsevier lesson (§3.3 scope update) |
 | US-2.2 | Completion and score are recorded | PASS / FAIL | |
 | US-3.1 | Elsevier + custom records appear together | PASS / FAIL | |
 | US-3.2 | Custom origin is marked in report | PASS / FAIL | |

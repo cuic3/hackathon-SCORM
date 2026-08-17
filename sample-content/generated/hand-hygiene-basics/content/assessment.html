@@ -1,0 +1,110 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Knowledge Check</title>
+    <link rel="stylesheet" type="text/css" href="../shared/style.css" />
+    <script type="text/javascript">
+        //Each question: text, array of answer choices, index of the correct choice.
+        var questions = [
+            {
+                text: "Which method is generally preferred when hands are not visibly soiled?",
+                answers: ["Alcohol-based hand rub", "Soap and water", "Hand sanitizer wipes only", "No hand hygiene needed"],
+                correctIndex: 0
+            },
+            {
+                text: "Which pathogen requires soap and water rather than alcohol-based hand rub because alcohol does not reliably kill it?",
+                answers: ["Influenza virus", "Clostridioides difficile", "Common cold rhinovirus", "Staphylococcus aureus"],
+                correctIndex: 1
+            },
+            {
+                text: "According to the WHO 5 Moments framework, when should you perform hand hygiene relative to an aseptic procedure?",
+                answers: ["Only after the procedure", "Before the procedure", "Only if visibly soiled", "It is optional for short procedures"],
+                correctIndex: 1
+            },
+            {
+                text: "How long should you rub your hands with an alcohol-based hand rub for it to be effective?",
+                answers: ["2-3 seconds", "5 seconds", "20-30 seconds", "5 minutes"],
+                correctIndex: 2
+            },
+            {
+                text: "Which of the following is a common mistake that reduces hand hygiene effectiveness?",
+                answers: [
+                    "Drying hands thoroughly after washing",
+                    "Missing the thumbs and fingertips during hand rub",
+                    "Using a single-use towel to turn off the tap",
+                    "Washing for the full recommended duration"
+                ],
+                correctIndex: 1
+            }
+        ];
+
+        function renderTest(){
+            var container = document.getElementById("test");
+            var html = "";
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                html += "<div class='question' id='q" + i + "'>";
+                html += "<p class='q-text'>" + (i + 1) + ". " + q.text + "</p>";
+                for (var a = 0; a < q.answers.length; a++){
+                    html += "<div class='answer'><label>";
+                    html += "<input type='radio' name='question_" + i + "' value='" + a + "'/> ";
+                    html += q.answers[a];
+                    html += "</label></div>";
+                }
+                html += "</div>";
+            }
+            container.innerHTML = html;
+        }
+
+        function submitAnswers(){
+            var correctCount = 0;
+
+            for (var i = 0; i < questions.length; i++){
+                var q = questions[i];
+                var selected = document.getElementsByName("question_" + i);
+                var learnerAnswer = -1;
+                for (var s = 0; s < selected.length; s++){
+                    if (selected[s].checked){
+                        learnerAnswer = parseInt(selected[s].value, 10);
+                    }
+                }
+                if (learnerAnswer == q.correctIndex){
+                    correctCount++;
+                }
+            }
+
+            var score = Math.round((correctCount / questions.length) * 100);
+            var resultsDiv = document.getElementById("results");
+            var passed = score >= 70;
+
+            resultsDiv.className = passed ? "pass" : "fail";
+            resultsDiv.innerHTML = "<h3>Your score: " + score + "%</h3>" +
+                "<p>You answered " + correctCount + " out of " + questions.length + " questions correctly.</p>" +
+                "<p>" + (passed ? "You passed this assessment." : "You did not reach the 70% passing threshold. Review the material and try again if you'd like, but your result has been recorded.") + "</p>";
+            resultsDiv.style.display = "block";
+
+            document.getElementById("submitBtn").disabled = true;
+
+            //hand the score up to the launch page, which records it against the LMS
+            //via cmi.core.score.raw / cmi.core.lesson_status (mirrors the reference
+            //sample's parent.RecordTest(score) pattern).
+            if (parent && parent.RecordTest){
+                parent.RecordTest(score);
+            }
+        }
+
+        window.onload = function(){
+            renderTest();
+        };
+    </script>
+</head>
+<body>
+    <div class="page-wrap">
+        <h1>Knowledge Check: Hand Hygiene Basics</h1>
+        <p>Answer all questions, then submit to see your score. You need 70% or higher to pass.</p>
+        <div id="test"></div>
+        <input type="button" id="submitBtn" value="Submit Answers" onclick="submitAnswers();" />
+        <div id="results" style="display:none;"></div>
+    </div>
+</body>
+</html>

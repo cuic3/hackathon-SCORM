@@ -19,6 +19,7 @@ import type {
     CompletionStatus,
     Lesson as LessonRow,
     LessonCompletion,
+    LessonOrigin,
 } from '../../types/domain';
 import './lesson.scss';
 
@@ -108,14 +109,17 @@ const Lesson = () => {
         setState((prev) => (prev ? { ...prev, completion: data ?? null } : prev));
     };
 
-    // Custom lessons: assign window.API, THEN render the iframe — and only
-    // recreate the adapter when the lesson itself changes, never when
-    // `completion` is refreshed afterwards (that would tear down a still-live
-    // adapter's pending debounced write out from under the running iframe).
+    // Any lesson with real package content: assign window.API, THEN render the
+    // iframe — and only recreate the adapter when the lesson's content itself
+    // changes, never when `completion` is refreshed afterwards (that would
+    // tear down a still-live adapter's pending debounced write out from under
+    // the running iframe).
     const lessonId_ = state?.lesson.id;
-    const lessonOrigin = state?.lesson.origin;
+    const lessonPackageId = state?.lesson.package_id;
+    const lessonLaunchPath = state?.lesson.launch_path;
+    const hasPlayableContent = Boolean(lessonPackageId && lessonLaunchPath);
     useEffect(() => {
-        if (!state || lessonOrigin !== 'custom' || !profile) {
+        if (!state || !hasPlayableContent || !profile) {
             setReady(state != null);
             return;
         }
@@ -133,7 +137,7 @@ const Lesson = () => {
                 learnerId: profile.id,
                 lessonId: lesson.id,
                 lessonTitleSnapshot: lesson.title,
-                lessonOriginSnapshot: 'custom',
+                lessonOriginSnapshot: lesson.origin as LessonOrigin,
                 accessToken,
                 seed: completion
                     ? {
@@ -159,7 +163,7 @@ const Lesson = () => {
             delete window.API;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lessonId_, lessonOrigin, profile?.id]);
+    }, [lessonId_, lessonPackageId, lessonLaunchPath, profile?.id]);
 
     if (notFound) {
         return (
@@ -200,7 +204,7 @@ const Lesson = () => {
             </div>
             <p className={`${baseClassName}__description`}>{lesson.description}</p>
 
-            {lesson.origin === 'custom' ? (
+            {hasPlayableContent ? (
                 <Card className={`${baseClassName}__player`}>
                     {ready && lesson.package_id && lesson.launch_path ? (
                         <iframe
@@ -218,10 +222,7 @@ const Lesson = () => {
                 <Card className={`${baseClassName}__player`}>
                     <div className={`${baseClassName}__player__placeholder`}>
                         <Icon isDecorative size="l" sprite={Icon.Sprites.PLAY_SOLID} />
-                        <p>
-                            This is seeded Elsevier content for demo purposes —
-                            no real player is wired up.
-                        </p>
+                        <p>This lesson doesn&rsquo;t have content available yet.</p>
                     </div>
                 </Card>
             )}
@@ -247,7 +248,7 @@ const Lesson = () => {
                         <dd>{scoreText}</dd>
                     </div>
                 </dl>
-                {lesson.origin === 'custom' ? (
+                {hasPlayableContent ? (
                     <Button type="tertiary" onClick={() => refreshCompletion()}>
                         Refresh status
                     </Button>

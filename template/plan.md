@@ -19,7 +19,7 @@
 - `app/src/App.tsx` — router shell. Adds `/login`, `/admin/upload`, `/report` alongside existing `/` and `/lesson/:lessonId`, with role-based route guards (see §2.5).
 - `app/src/components/app-shell/` — page chrome (ELS `Header` + `Footer` + top nav), wraps every route.
 - `app/src/pages/home/` — lesson list ("My learning"), split into "Elsevier lessons" and "Custom lessons" sections. Maps to US-1 (custom lesson available, origin distinguishable) and US-3 (unified reporting view). Now reads from Supabase instead of mock data.
-- `app/src/pages/lesson/` — single-lesson view: real SCORM player (iframe + API adapter, see §2.4) for custom lessons; read-only progress panel for seeded Elsevier lessons (no real launch — out of scope, Elsevier integration is mocked/seeded only). Maps to US-2 (launch/complete) and US-4 (completion history display).
+- `app/src/pages/lesson/` — single-lesson view: real SCORM player (iframe + API adapter, see §2.4) for any lesson that has package content (`package_id`/`launch_path` set), regardless of origin; a "content not yet available" placeholder otherwise (see §2.7). Maps to US-2 (launch/complete) and US-4 (completion history display).
 - `app/src/components/lesson-card/` — shared card used by Home for both Elsevier and custom lessons; shows a "Custom content" badge when `origin === 'custom'`.
 - `app/src/pages/admin-upload/` *(new)* — admin upload view: zip select → validate → parse manifest → upload to Storage → insert lesson row. See §2.3.
 - `app/src/pages/report/` *(new)* — nurse educator unified report view. See §2.6.
@@ -147,6 +147,20 @@ Resume: the sample's own `doStart()` already reads `cmi.core.lesson_location` an
 ### 2.6 Unified report (new: `app/src/pages/report/report.tsx`)
 Single table/list joining all `lesson_completions` (seeded elsevier + real custom), reading from denormalized snapshot fields (not live-joining `lessons`, so deactivated/edited content never changes historical display). Origin badge reused from `lesson-card`'s existing "Custom content" badge pattern. Score display rule (MUST): always `"{pct}% ({raw}/{max})"` when a score exists, else `"Completed — no score reported"` (never blank/dash) when status indicates completion with no score.
 
+### 2.7 Elsevier real playback + content backfill
+
+Per `spec.md` §3.3's scope update, Elsevier-origin lessons use the identical real SCORM 1.2 pipeline as custom lessons — origin is purely a `lessons.origin` data-model/display distinction (the "Custom content" badge, the report grouping), not a format or runtime difference. This closes a gap where `lesson.tsx` still gated the real player on `origin === 'custom'` and rendered a static placeholder for Elsevier lessons.
+
+**Player generalization (`app/src/pages/lesson/lesson.tsx`):** replace the `lesson.origin === 'custom'` gate with a content-availability gate:
+```ts
+const hasPlayableContent = Boolean(lesson.package_id && lesson.launch_path);
+```
+Used at every site that previously branched on origin: the adapter-creation `useEffect` guard (and its dependency array, keyed off package_id/launch_path instead of origin — still never re-fires on a completion-only refresh), the player-vs-placeholder JSX branch, and the "Refresh status" button visibility. Also fixes a latent bug: the adapter was constructed with `lessonOriginSnapshot: 'custom'` hardcoded, which would have mislabeled `lesson_completions.lesson_origin_snapshot` (and therefore the report's origin badge) for any non-custom lesson — now passes `lesson.origin` directly. The "Custom content" badge itself stays gated on `origin === 'custom'`, since that's a display concern independent of content availability. The placeholder copy is now origin-neutral ("This lesson doesn't have content available yet.") since a missing package can, in principle, apply to a lesson of any origin.
+
+**Content backfill pipeline:** the 4 seeded Elsevier `lessons` rows (`Hand Hygiene Basics`, `Early Recognition of Sepsis`, `Medication Safety Fundamentals`, `Infection Control Documentation`) were seeded with `package_id`/`launch_path` both `null`, since no real package existed for them yet. Two-step fix:
+1. **Generate** — the `.claude/skills/generate-scorm-lessons/` skill authors real SCORM 1.2 `.zip` packages (manifest + `shared/scormfunctions.js` copied verbatim + real interactive multi-page content + a scored assessment) for each title, output under `sample-content/generated/`. The skill only produces files + a summary; it never touches the DB itself.
+2. **Backfill** — `app/scripts/seed-elsevier-content.mjs` (new, checked-in, reusable), run via `node --env-file=.env scripts/seed-elsevier-content.mjs` from `app/`. For each generated package: creates a service-role `supabase-js` client (same trust model as `scorm-content-proxy.ts` — bypasses RLS, key never reaches the browser), generates a fresh `packageId` (`crypto.randomUUID()`), unzips with `JSZip` and uploads every file to Storage bucket `content` at `{packageId}/{relativePath}` (reusing `mimeTypeFor` from `app/src/utils/mime-types.ts`, `upsert: true` so reruns are safe), then updates that lesson's `package_id`/`launch_path`/`manifest_title` by its known row id. Launch path/manifest title per package are taken from the skill's own generation summary rather than re-parsed from XML in Node, to avoid adding an XML-parsing dependency for a one-off/occasional-use script. This script is kept (not deleted after first run) since the skill's own stated purpose is to expand the seeded catalog again later.
+
 ## 3. Key Decisions
 - Built as a **separate standalone project** (`hackathon-SCORM/app`), not inside `ecl-neuron-app` — matches the spec's "standalone demonstrator" constraint and avoids touching the production CLH codebase.
 - Reused the **real** `@els/*` packages (not a hand-rolled copy of the tokens) since this machine already has Artifactory registry access — keeps the visual language authentic with minimal maintenance.
@@ -176,6 +190,7 @@ Single table/list joining all `lesson_completions` (seeded elsevier + real custo
 2. **Thin end-to-end loop** (demo-critical path): real login/route guards (§2.5) → admin upload, hardcoded to the one sample package first (§2.3) → content proxy plugin (§2.2) → SCORM adapter + lesson launch (§2.4) → persistence wiring → report page (§2.6). Manually verify the full loop once: admin uploads → learner completes → educator sees it next to seeded rows.
 3. **Required edge cases** (spec §8): resume-from-bookmark verification, deactivate button + audit log, missing-manifest rejection message, admin-only audit log view.
 4. **Polish**: full re-upload/replace flow, multiple learners/packages if time allows, upload UX polish.
+5. **Elsevier real playback**: generalize the SCORM player to any origin with package content; author + backfill real Elsevier packages (see §2.7).
 
 ## Verification
 - `cd app && npm install jszip && npm run dev` — run the actual local demo loop end-to-end: log in as each seeded role, upload the sample zip as admin, launch+complete it as learner (confirm real iframe-hosted SCORM content runs, not a placeholder), confirm suspend/resume works (exit mid-lesson, relaunch, confirm resume prompt), view the report as educator and confirm both seeded Elsevier rows and the new custom completion appear with correct origin/score formatting.
