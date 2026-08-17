@@ -1,110 +1,126 @@
-# spec.md — Custom Content Uploader (SCORM) · <Team Name>
-<!-- BUSINESS SPEC: the WHAT and WHY. Keep implementation decisions in plan.md.
-     Aim for clarity and testability, not length.
-     Source: CS Product Brief — Custom Content Uploader (SCORM) · Clinical Learning Hub -->
+# spec-new.md — Custom Content Uploader (SCORM) — Agent-Consumable Spec
 
-## 1. Overview
-**Problem statement:** Clinical Learning Hub customers with their own SCORM-based training must keep that content in a separate LMS today, splitting assignments, completion tracking, and reporting across two systems. Customer Success reports that 29 clients cannot migrate to CLH until they can bring their own SCORM content with them.
+> This document is the authoritative spec for this feature. It is self-contained: do not resolve ambiguity by deferring to another document.
 
-**Target user:** A Clinical Learning Hub administrator who uploads and manages their organisation's custom training content.
+## 0. How to use this document
+- Every acceptance criterion (AC) below has a stable ID (`US-x.y`). Use these IDs in commits, PRs, and test names.
+- Statements phrased as **MUST / MUST NOT** are hard constraints. Statements phrased as **SHOULD** are strong defaults but not yet confirmed — check §7 (Open Assumptions) before treating them as final.
+- Do not implement anything in §6 (Out of Scope) without first updating this document.
+- If a value, mapping, or business rule is not explicit here, do not guess — leave a `TODO(spec)` and ask.
 
-**Outcome:** <!-- SYNTHESIZED from Problem statement + Demo definition of done, not stated verbatim in the original brief — confirm/correct this. --> Customers who currently split training across two systems can bring their own SCORM 1.2 content into Clinical Learning Hub and get one unified view of completion and scores, removing the migration blocker for the 29 affected clients.
+## 1. Goal
+Build a standalone demonstrator where:
+1. An admin uploads a real SCORM 1.2 `.zip` package.
+2. A learner launches and completes the real SCORM content (not a mock).
+3. A nurse educator views one report showing both seeded Elsevier lesson records and the custom SCORM completion/score, with custom content clearly labeled as custom-origin.
 
-**Demo definition of done:** An admin uploads one real SCORM 1.2 package, a learner launches and completes it, and the completion plus score appear in one report alongside seeded Elsevier lessons with the custom origin clearly identified.
+**Definition of done (demo):** one admin upload → one learner completion with score → one unified report showing that result next to seeded Elsevier lesson data, origin unambiguous.
 
-## 2. User Stories & Acceptance Criteria
+**Why it matters:** 29 CLH customers cannot migrate until they can bring their own SCORM content instead of running a second LMS. This is not stated for narrative color — it is the reason "real SCORM package, real completion, real report" is a hard requirement, not "any working demo."
 
-### US-1 — Upload custom SCORM content (P1)
-As a CLH admin, I want to upload my organisation's SCORM 1.2 training package so that it can be offered alongside Elsevier learning content.
-- **Given** valid admin credentials **when** the admin logs in **then** they reach the admin upload view.
-- **Given** a valid SCORM 1.2 package containing `imsmanifest.xml` **when** the admin uploads it **then** the package becomes available as a custom lesson.
-- **Given** an uploaded custom lesson **when** its origin is displayed **then** it is clearly distinguishable from seeded Elsevier content.
-- **Given** a zip that does not contain `imsmanifest.xml` **when** the admin uploads it **then** the upload is rejected with a clear error message and nothing is added as a lesson.
+## 2. System Actors & Entry Points
+| Role | Credentials | Entry point / landing view |
+|---|---|---|
+| Admin | Real login (username/password), synthetic/seeded account | Admin upload view |
+| Learner | Real login (username/password), synthetic/seeded account | Available lessons list |
+| Nurse educator | Real login (username/password), synthetic/seeded account | Unified report view |
 
-### US-2 — Complete a custom lesson (P1)
-As a learner, I want to launch and complete a custom lesson so that my learning activity is captured in the same experience.
-- **Given** valid learner credentials **when** the learner logs in **then** they reach their available lessons.
-- **Given** a custom SCORM 1.2 lesson is available **when** the learner launches it **then** the real SCORM lesson runs rather than a mock screen.
-- **Given** the learner completes the lesson and the package reports completion and score **when** the session finishes **then** the completion and score are recorded for that learner.
-- **Given** a learner exited a lesson before completion (suspended, bookmarked) **when** they relaunch it **then** it resumes from the bookmarked location rather than restarting.
+- **MUST**: each role has its own real credential-based login.
+- **MUST NOT**: implement SSO (out of scope).
+- All accounts, the organisation, and Elsevier lesson records are synthetic/seeded — there is no real CLH integration.
 
-### US-3 — See unified completion reporting (P1)
-As a nurse educator, I want one report containing Elsevier and custom learning activity so that I do not have to reconcile completion data across two systems.
-- **Given** valid nurse educator credentials **when** the educator logs in **then** they reach the unified report view.
-- **Given** seeded Elsevier lesson records and at least one completed custom lesson **when** the educator views the report **then** both appear together in the same report.
-- **Given** a custom lesson appears in the report **when** the educator reviews the record **then** its custom origin is clearly marked.
-- **Given** a learner completed a custom lesson **when** the report is viewed **then** the recorded completion and score are visible.
-- **Given** a completed lesson for which the package reported no score **when** the report is viewed **then** it displays "Completed — no score reported" rather than a blank cell.
+## 3. Functional Requirements by Feature
 
-### US-4 — Preserve recorded completion history (P1)
-As a nurse educator, I want recorded completions to survive content-management changes so that historical learning evidence is not lost.
-- **Given** a learner has a recorded completion **when** the related custom content is re-uploaded, deactivated, or otherwise changed **then** the existing completion record remains available in the report exactly as before.
-- **Given** custom content is re-uploaded, deactivated, or otherwise changed **when** that change happens **then** the system records it in a backend audit log (linked to the affected lesson) so completion records stay resolvable; this log is a backend guarantee only and is not exposed in the user-facing report.
+### 3.1 Upload custom SCORM content (US-1, P1)
+| AC ID | Given | When | Then |
+|---|---|---|---|
+| US-1.1 | A valid SCORM 1.2 `.zip` containing `imsmanifest.xml` | Admin uploads it | Package becomes available as a custom lesson |
+| US-1.2 | An uploaded custom lesson | Its origin is displayed anywhere in the UI | It is clearly distinguishable from seeded Elsevier content |
 
-## 3. Business Rules & Constraints
-- The demonstrator is **standalone**; it does not integrate with or require access to Clinical Learning Hub.
-- The organisation, users, and Elsevier lesson records used in the demonstrator are synthetic/seeded. Seed 3-5 Elsevier lesson records with mixed completion states (some completed with scores, some incomplete, some not started) so the unified report reads as realistic rather than sparse.
-- Only **SCORM 1.2** packages are in scope.
-- A supported SCORM package is a ZIP containing the SCORM contract file `imsmanifest.xml`.
-- Recorded completion history must never be lost through re-upload, deactivation, or refactoring.
-- The demonstration must use real SCORM packages and working software; mock screens do not satisfy the brief.
-- Each role (admin, learner, nurse educator) has a real login (credentials, not SSO — SSO remains out of scope); accounts are synthetic/seeded per the rule above.
-- Score is displayed as both a percentage and the raw value wherever shown in the report (e.g. "78% (78/100)").
-- At each `metrics.md` checkpoint, record what actually happened, not what was intended: tasks planned vs. completed, ACs currently passing, any scope/behavior deviation and whether `spec.md` was updated before continuing to build, one specific thing AI got right, one specific thing a human had to fix, and — at End of Event — one concrete failure for the required "what didn't work" section.
+**Validation rule:** a "supported SCORM package" = a ZIP file containing `imsmanifest.xml` at the root the parser expects (see sample package structure in §5).
 
-## 4. UX / Experience Notes
-- **Primary flow:** Admin logs in → uploads custom content → custom lesson is available → learner logs in → launches, completes (or suspends/resumes) lesson → educator logs in → reviews a combined report containing Elsevier and custom content.
-- **Important states:** successful upload; lesson available; lesson launched; suspended (in progress, resumable from bookmark); completion recorded; score recorded (percentage + raw); combined report; custom-origin indicator.
-- **Known experience constraints:** Findings from inspecting the SCORM 1.2 stand-in sample (`sample-content/RuntimeBasicCalls_SCORM12/`): the SCO is a multi-page mini-course behind a single launch page (`shared/launchpage.html`) that calls the SCORM runtime API directly — the hosting app must expose an LMS API object the SCO's window can find and call. The package bookmarks progress via `cmi.core.lesson_location` and sets `cmi.core.exit = "suspend"` on an incomplete exit, so a learner who leaves mid-lesson can resume rather than restart (see Edge Cases). Score is reported as `cmi.core.score.raw/min/max` (0-100 scale).
+**Required error message (edge case, verbatim example from spec):**
+```
+This file doesn't look like a SCORM package (missing imsmanifest.xml)
+```
+Exact wording is an example, not necessarily verbatim-required, but MUST clearly state the missing-manifest reason.
 
-## 5. Edge Cases
-- A SCORM package does not contain `imsmanifest.xml` → the upload is rejected with a clear error message (e.g. "This file doesn't look like a SCORM package (missing imsmanifest.xml)"); nothing is added as a lesson.
-- A package launches but does not report completion → preserve the actual recorded state; do not fabricate completion.
-- A package does not report a score → do not invent one; the report displays "Completed — no score reported" rather than a blank/dash, so it reads as intentional rather than broken.
-- A previously completed lesson is re-uploaded or deactivated → the historical completion remains available.
-- A custom lesson and a seeded Elsevier lesson appear together → origin must remain unambiguous.
-- A learner exits a lesson before completion → the package reports `cmi.core.exit = "suspend"` with a bookmarked location; relaunching resumes from that bookmark rather than restarting.
+### 3.2 Complete a custom lesson (US-2, P1)
+| AC ID | Given | When | Then |
+|---|---|---|---|
+| US-2.1 | A custom SCORM 1.2 lesson is available | Learner launches it | The real SCORM lesson runs (real runtime, not a mock screen) |
+| US-2.2 | Learner completes the lesson; package reports completion + score | Session finishes | Completion and score are recorded for that learner |
 
-## 6. Out of Scope
-<!-- Adding one back requires changing this spec first. -->
-- ❌ SCORM 2004 support.
-- ❌ xAPI support.
-- ❌ AICC support.
-- ❌ CE/CPD credit parsing.
-- ❌ Bulk migration tooling.
-- ❌ Draft/version-history workflows.
-- ❌ Scheduled publishing.
-- ❌ Single sign-on (SSO).
-- ❌ Integration with the real Clinical Learning Hub.
-- ❌ Migration of real customer or learner data.
-- ❌ Multi-package migration or library-scale administration beyond what is needed to prove the end-to-end demonstrator.
+**Runtime contract (MUST implement, see §5 for full technical detail):**
+- Hosting app MUST expose a window-discoverable LMS API object the SCO can find and call (SCORM 1.2 API discovery convention).
+- MUST persist `cmi.core.lesson_location` as the bookmark.
+- MUST honor `cmi.core.exit == "suspend"` as "incomplete, resumable" — on relaunch, resume from the stored `cmi.core.lesson_location` rather than restarting.
+- MUST read score from `cmi.core.score.raw` / `.min` / `.max` (0–100 scale).
 
-## 7. Open Questions & Named Assumptions
-- **Question / assumption — A1, Valid-package assumption:** For the P1 demo, the supplied sample SCORM 1.2 package is treated as a valid supported package.
-  - **Owner:** Campbell Isherwood, Claire Cui
-  - **Tripwire:** The supplied package cannot be parsed/launched using the SCORM 1.2 contract described in the brief.
-- **Question / assumption — A2, Score availability assumption:** The P1 sample package reports a score that can be shown in the final report.
-  - **Owner:** Michelle Zuckerberg
-  - **Tripwire:** Inspection of the supplied package/runtime shows that no score is reported.
-- **Question / assumption — A3, Single-learner thin-slice assumption:** One learner completing one custom package is sufficient to prove the end-to-end P1 loop described in the brief.
-  - **Owner:** Rory Myers
-  - **Tripwire:** Mentor/product clarification requires multiple learners, packages, or assignments for the demo to satisfy the brief.
+### 3.3 Unified completion reporting (US-3, P1)
+| AC ID | Given | When | Then |
+|---|---|---|---|
+| US-3.1 | Seeded Elsevier lesson records + ≥1 completed custom lesson | Educator views the report | Both appear together in the same report |
+| US-3.2 | A custom lesson appears in the report | Educator reviews the record | Its custom origin is clearly marked |
+| US-3.3 | A learner completed a custom lesson | Report is viewed | Recorded completion and score are visible |
 
-## 8. Ready Check
-- [x] The problem and target user are specific.
-- [x] The outcome is stated as an outcome, not a solution.
-- [x] Every P1 acceptance criterion is observable and testable by a non-author.
-- [x] Out of Scope contains at least five meaningful exclusions.
-- [x] Shape-changing unknowns are resolved or recorded as named assumptions with owner + tripwire.
-- [x] This document contains no implementation design masquerading as a requirement.
-- [ ] Alignment: `plan.md` and `tasks.md` contradict nothing in this spec. *(Complete after Stage 2.)*
+**Display rule (MUST):** wherever a score is shown, display both percentage and raw value, e.g. `"78% (78/100)"`.
 
-**Ready verdict:** READY WITH NAMED ASSUMPTIONS
+**Seed data requirement:** seed 3–5 Elsevier lesson records with mixed states (some completed with scores, some incomplete, some not started) so the report doesn't look sparse.
 
-<!-- At feature freeze: run Verify — re-test every Given/When/Then above and record PASS/FAIL. -->
+### 3.4 Preserve recorded completion history (US-4, P1)
+| AC ID | Given | When | Then |
+|---|---|---|---|
+| US-4.1 | A learner has a recorded completion | Related custom content is re-uploaded, deactivated, or otherwise changed | The existing completion record remains available in the report, exactly as before |
+
+**MUST NOT**: ever lose or mutate a recorded completion as a side effect of content management actions (re-upload, deactivate, edit).
+
+## 4. Business Rules (cross-cutting)
+- **MUST**: demonstrator is standalone — no dependency on / integration with real Clinical Learning Hub.
+- **MUST**: only SCORM 1.2 is supported (not 2004, not xAPI, not AICC).
+- **MUST**: all org/user/Elsevier-lesson data is synthetic/seeded.
+- **MUST NOT**: fabricate a completion state or score that the package did not report (see Edge Cases, §5).
+- **MUST**: at every `metrics.md` checkpoint, log — tasks planned vs. completed; ACs currently passing; any scope/behavior deviation and whether `spec.md` was updated first; one thing AI got right; one thing a human had to fix; and (End of Event only) one concrete "what didn't work."
+
+## 5. Technical / Runtime Notes (from inspecting `sample-content/RuntimeBasicCalls_SCORM12/`)
+- The SCO is a multi-page mini-course behind a single launch page: `shared/launchpage.html`.
+- That launch page calls the SCORM runtime API directly from JS — the hosting app MUST expose a discoverable LMS API object in the window hierarchy that the SCO can find (standard SCORM 1.2 `ipsvLearning`/API discovery pattern — confirm exact object name against the sample before hardcoding).
+- Bookmarking field: `cmi.core.lesson_location`.
+- Suspend flag: `cmi.core.exit = "suspend"` set by the package on an incomplete exit.
+- Score fields: `cmi.core.score.raw`, `cmi.core.score.min`, `cmi.core.score.max` — 0–100 scale.
+- Package validity check: ZIP MUST contain `imsmanifest.xml`.
+
+## 6. Explicitly Out of Scope — do not build without updating this document first
+- SCORM 2004 support
+- xAPI support
+- AICC support
+- CE/CPD credit parsing
+- Bulk migration tooling
+- Draft/version-history workflows
+- Scheduled publishing
+- Single sign-on (SSO)
+- Integration with the real Clinical Learning Hub
+- Migration of real customer or learner data
+- Multi-package migration or library-scale administration beyond what's needed for the end-to-end demo
+
+## 7. Open Assumptions — do not silently resolve; confirm with owner if a tripwire fires
+| ID | Assumption | Owner | Tripwire (when this assumption breaks) |
+|---|---|---|---|
+| A1 | The supplied sample SCORM 1.2 package is treated as valid/supported for the P1 demo | Campbell Isherwood, Claire Cui | Supplied package cannot be parsed/launched per the SCORM 1.2 contract described |
+| A2 | The P1 sample package reports a score usable in the final report | Michelle Zuckerberg | Inspection shows no score is reported |
+| A3 | One learner completing one custom package is sufficient to prove the P1 loop | Rory Myers | Mentor/product clarification requires multiple learners/packages/assignments |
+
+## 8. Edge Cases Checklist (implement handling for all of these)
+- [ ] Missing `imsmanifest.xml` → reject upload with clear error; nothing added.
+- [ ] Package launches but never reports completion → preserve actual state; do not fabricate completion.
+- [ ] Package reports no score → show `"Completed — no score reported"`, never a blank/dash.
+- [ ] Previously completed lesson's content is re-uploaded/deactivated → historical completion still visible, unchanged.
+- [ ] Custom + seeded Elsevier lesson shown together → origin must stay visually unambiguous.
+- [ ] Learner exits mid-lesson (`cmi.core.exit = "suspend"` + bookmarked location) → relaunch resumes at bookmark, not restart.
 
 ## 9. Verify Table
-<!-- Fill at feature freeze by re-testing every acceptance criterion. -->
+Fill this in at feature freeze by re-testing every AC above against the running system. Do not invent new IDs — use the ones defined in §3.
+
 | AC | Scenario | Verdict | Notes |
 |---|---|---|---|
 | US-1.1 | Valid SCORM 1.2 ZIP becomes a custom lesson | PASS / FAIL | |
@@ -115,7 +131,12 @@ As a nurse educator, I want recorded completions to survive content-management c
 | US-3.2 | Custom origin is marked in report | PASS / FAIL | |
 | US-3.3 | Completion + score visible in report | PASS / FAIL | |
 | US-4.1 | Recorded completion survives content change | PASS / FAIL | |
-<!-- Below: ACs added during spec refinement (login, resume, invalid-upload, no-score display, audit log) — test separately. -->
+
+### 9.1 Additional ACs (added during spec refinement)
+These were introduced after the original verification table was drafted (login flows, resume, invalid-upload, no-score display, audit log). Tracked here separately so they don't get mixed into the original table above.
+
+| AC | Scenario | Verdict | Notes |
+|---|---|---|---|
 | US-1.3 | Admin login reaches upload view | PASS / FAIL | |
 | US-1.4 | Invalid upload (missing `imsmanifest.xml`) rejected with clear error | PASS / FAIL | |
 | US-2.3 | Learner login reaches available lessons | PASS / FAIL | |
@@ -123,3 +144,9 @@ As a nurse educator, I want recorded completions to survive content-management c
 | US-3.4 | Educator login reaches report view | PASS / FAIL | |
 | US-3.5 | No-score lesson shows "Completed — no score reported" | PASS / FAIL | |
 | US-4.2 | Backend audit log records content changes, not exposed in report | PASS / FAIL | |
+
+## 10. Working Agreement
+- Never guess a requirement, value, mapping, or business rule — leave it explicit as TODO/unknown/assumption and ask.
+- If new learning changes scope, behavior, or an acceptance criterion, update this document before continuing to build.
+- Keep `plan.md` and `tasks.md` synchronized with whatever is current in this document.
+- At each `metrics.md` checkpoint, record what actually happened, not what was intended (see §4).
