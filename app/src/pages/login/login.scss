@@ -1,0 +1,47 @@
+@use '@els/els-styleguide-core/scss/tools';
+@use '../../assets/styles/mixins' as *;
+
+.login {
+    @include display-flex;
+    @include justify-content(center);
+    padding: 3rem 1rem;
+
+    &__card {
+        width: 100%;
+        max-width: 24rem;
+        padding: 2rem;
+    }
+
+    &__subtitle {
+        color: tools.$els-color-n6;
+        margin-top: 0;
+    }
+
+    &__form {
+        @include display-flex;
+        @include flex-direction(column);
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    &__field {
+        @include display-flex;
+        @include flex-direction(column);
+        gap: 0.375rem;
+        font-weight: 600;
+
+        input {
+            font-weight: 400;
+            padding: 0.5rem 0.75rem;
+            border: 0.0625rem solid tools.$els-color-n4;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+    }
+
+    &__error {
+        color: tools.$els-color-warn;
+        margin: 0;
+    }
+}
