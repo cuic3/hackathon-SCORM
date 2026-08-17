@@ -1,0 +1,2 @@
+Read the Ready spec.md only. Derive plan.md (stack, architecture, key
+decisions, risks) and tasks.md (every task traced to a US/AC, ordered, with a named thin slice). Do not add scope not implied by spec.md. Then run an alignment check: quote any line in plan.md or tasks.md that could be read as contradicting spec.md, or state "no contradictions found."

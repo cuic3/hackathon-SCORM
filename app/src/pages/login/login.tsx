@@ -37,7 +37,7 @@ const Login = () => {
                     Sign in
                 </h1>
                 <p className={`${baseClassName}__subtitle`}>
-                    Custom Content Uploader demo — sign in with your seeded
+                    Clinical Learning Hub demo — sign in with your seeded
                     account.
                 </p>
                 <form className={`${baseClassName}__form`} onSubmit={handleSubmit}>

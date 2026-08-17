@@ -18,14 +18,14 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
                 className="app-shell__header"
                 wordmark={
                     <span className="app-shell__header__wordmark">
-                        Custom Content Uploader
+                        CLinical Learning Hub
                     </span>
                 }
                 wordmarkLink={{
                     href: profile
                         ? landingRouteForRole(profile.role as Role)
                         : '/',
-                    'aria-label': 'Custom Content Uploader home',
+                    'aria-label': 'Clinical Learning Hub home',
                 }}
                 hideTreeAtMobile
             >
