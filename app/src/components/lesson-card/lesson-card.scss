@@ -38,6 +38,13 @@
         font-size: 0.875rem;
     }
 
+    &__score {
+        margin: 0;
+        color: tools.$els-color-n6;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
     &__footer {
         margin-top: auto;
     }

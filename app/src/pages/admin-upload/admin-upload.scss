@@ -16,6 +16,29 @@
         margin-top: 1rem;
     }
 
+    &__replace-banner {
+        @include display-flex;
+        @include flex-direction(row);
+        align-items: center;
+        gap: 0.5rem;
+        margin: 0 0 1rem;
+        padding: 0.75rem 1rem;
+        background-color: tools.$els-color-n2;
+        border-radius: 0.25rem;
+        font-weight: 600;
+    }
+
+    &__replace-cancel {
+        background: none;
+        border: none;
+        padding: 0;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: underline;
+        color: tools.$els-color-primary;
+        cursor: pointer;
+    }
+
     &__file-input {
         @include display-flex;
         @include flex-direction(column);
@@ -93,6 +116,20 @@
             color: tools.$els-color-n6;
             font-size: 0.875rem;
             margin: 0.25rem 0 0.5rem;
+        }
+
+        &__lineage {
+            color: tools.$els-color-n6;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        &__actions {
+            @include display-flex;
+            @include flex-direction(row);
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
         }
     }
 
