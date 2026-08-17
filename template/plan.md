@@ -4,7 +4,7 @@
 
 ## 1. Stack
 - **Language/framework:** React 17 + TypeScript, built with Vite. Client-side routing via `react-router-dom` v5 (matches the main Clinical Learning Hub app's version).
-- **UI/styling:** Elsevier's internal Leyden/ELS design system (`@els/els-styleguide-core` + `@els/els-react--*` component packages — header, footer, card, pill, badge, button, icon, link-element), same as the main CLH frontend (`ecl-neuron-app`), so the demonstrator looks native to the product. Plain SCSS per component (no CSS Modules), BEM-ish class naming, same as `ecl-neuron-app` conventions.
+- **UI/styling:** Elsevier's internal Leyden/ELS design system (`@els/els-styleguide-core` + `@els/els-react--*` component packages — header, footer, card, pill, badge, button, icon, link-element), same as the main CLH frontend, so the demonstrator looks native to the product. Plain SCSS per component (no CSS Modules), BEM-ish class naming, same as Elsevier conventions.
 - **Data/storage:** **Supabase** (Postgres + Auth + Storage). Schema, RLS, and seed data in §2.1 below. Replaces the current static mock (`app/src/data/lessons.ts`).
 - **New dependency:** `jszip` (client-side zip inspection/extraction for the upload flow). No `@types/jszip` (ships its own types), no `mime` package (small hand-rolled extension map covers the file types actually seen in the sample package), no `uuid` package (`crypto.randomUUID()` instead).
 - **Run commands:**

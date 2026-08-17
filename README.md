@@ -5,6 +5,7 @@ Problem statement: Clinical Learning Hub customers with their own SCORM-based tr
 ## Install dependencies:
 
 ```bash
+   cd app
    npm install
 ```
 
