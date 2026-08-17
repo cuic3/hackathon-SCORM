@@ -1,0 +1,85 @@
+@use '@els/els-styleguide-core/scss/tools';
+@use '../../assets/styles/mixins' as *;
+
+.lesson {
+    width: 85%;
+    max-width: 60rem;
+    padding: 1rem 2.5rem;
+    margin: 0 auto;
+
+    &__back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        color: tools.$els-color-secondary;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 1rem;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+
+    &__header {
+        @include display-flex;
+        @include flex-direction(row);
+        @include justify-content(space-between);
+        align-items: center;
+        gap: 1rem;
+    }
+
+    &__description {
+        color: tools.$els-color-n6;
+    }
+
+    &__player {
+        margin-top: 1.5rem;
+        padding: 3rem 1.5rem;
+
+        &__placeholder {
+            @include display-flex;
+            @include flex-direction(column);
+            @include align-items(center);
+            gap: 1rem;
+            text-align: center;
+            color: tools.$els-color-n6;
+        }
+    }
+
+    &__progress {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+
+        &__title {
+            margin-top: 0;
+            font-size: 1.125rem;
+        }
+
+        &__row {
+            @include display-flex;
+            @include flex-direction(row);
+            @include justify-content(space-between);
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 0.0625rem solid tools.$els-color-n2;
+
+            dt {
+                font-weight: 600;
+            }
+
+            dd {
+                margin: 0;
+            }
+
+            &:last-child {
+                border-bottom: none;
+            }
+        }
+    }
+
+    @include for-xs-device {
+        width: 100%;
+        padding: 1rem;
+    }
+}

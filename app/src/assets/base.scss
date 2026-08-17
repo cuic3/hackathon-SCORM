@@ -1,0 +1,40 @@
+@use '@els/els-styleguide-core/scss/core' with (
+    $path-to-els-core-fonts: '@els/els-styleguide-core/fonts',
+    $els-core-theme: old-branding
+);
+@forward '@els/els-styleguide-core/scss/core';
+
+@use '@els/els-react--footer/dist/els-styleguide-footer.scss';
+@use '@els/els-react--header/dist/els-styleguide-header.scss';
+@use '@els/els-react--card/dist/els-styleguide-card.scss';
+@use '@els/els-react--button/dist/els-styleguide-button.scss';
+@use '@els/els-react--pill/dist/els-styleguide-pill.scss';
+@use '@els/els-react--badge/dist/els-styleguide-badge.scss';
+@use '@els/els-react--link-element/dist/els-styleguide-link.scss';
+
+@use './styles/mixins';
+
+html {
+    box-sizing: border-box;
+    height: 100%;
+    font-size: 16px;
+    font-family: 'NexusSansWebPro', sans-serif;
+}
+
+body {
+    height: 100%;
+    margin: 0;
+}
+
+#root {
+    height: 100%;
+}
+
+*:before,
+*:after {
+    box-sizing: inherit;
+}
+
+h1 {
+    font-size: 2rem;
+}
