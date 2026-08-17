@@ -64,7 +64,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 | US-3.2 | A custom lesson appears in the report | Educator reviews the record | Its custom origin is clearly marked |
 | US-3.3 | A learner completed a custom lesson | Report is viewed | Recorded completion and score are visible |
 
-**Display rule (MUST):** wherever a score is shown, display both percentage and raw value, e.g. `"78% (78/100)"`.
+**Display rule (MUST):** wherever a score is shown, display both percentage and raw value, e.g. `"78% (78/100)"`. When no score is reported: a **completed** lesson shows `"Completed — no score reported"` (never blank/dash); an **incomplete/in-progress** lesson shows `"In progress"`.
 
 **Seed data requirement:** seed 3–5 Elsevier lesson records with mixed states (some completed with scores, some incomplete, some not started) so the report doesn't look sparse.
 
@@ -115,7 +115,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 ## 8. Edge Cases Checklist (implement handling for all of these)
 - [ ] Missing `imsmanifest.xml` → reject upload with clear error; nothing added.
 - [ ] Package launches but never reports completion → preserve actual state; do not fabricate completion.
-- [ ] Package reports no score → show `"Completed — no score reported"`, never a blank/dash.
+- [ ] Package reports no score → show `"Completed — no score reported"` if the lesson is completed, or `"In progress"` if it isn't; never a blank/dash either way.
 - [ ] Previously completed lesson's content is re-uploaded/deactivated → historical completion still visible, unchanged.
 - [ ] Custom + seeded Elsevier lesson shown together → origin must stay visually unambiguous.
 - [ ] Learner exits mid-lesson (`cmi.core.exit = "suspend"` + bookmarked location) → relaunch resumes at bookmark, not restart.
