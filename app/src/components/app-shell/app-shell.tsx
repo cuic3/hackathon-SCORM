@@ -18,7 +18,7 @@ const AppShell = ({ children }: { children: React.ReactNode }) => {
                 className="app-shell__header"
                 wordmark={
                     <span className="app-shell__header__wordmark">
-                        CLinical Learning Hub
+                        Clinical Learning Hub
                     </span>
                 }
                 wordmarkLink={{
