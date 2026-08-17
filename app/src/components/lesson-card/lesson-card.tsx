@@ -62,10 +62,10 @@ const LessonCard = ({ lesson, completion }: LessonWithCompletion) => {
                     {STATUS_LABEL[displayStatus]}
                 </Pill>
             </div>
-            {scoreText ? (
-                <p className={`${baseClassName}__score`}>{scoreText}</p>
-            ) : null}
             <div className={`${baseClassName}__footer`}>
+                {scoreText ? (
+                    <p className={`${baseClassName}__score`}>{scoreText}</p>
+                ) : null}
                 <Link
                     to={`/lesson/${lesson.id}`}
                     className={`${baseClassName}__launch-link`}
