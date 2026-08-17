@@ -16,12 +16,16 @@ vi.mock('./supabase', () => ({
 // Imported after the mock so the module under test picks up the mocked './supabase'.
 const { ScormApiAdapter } = await import('./scorm-api-adapter');
 
-function makeAdapter(seed: CompletionSeed | null = null) {
+function makeAdapter(
+    seed: CompletionSeed | null = null,
+    overrides: { sourceInstitutionSnapshot?: string | null } = {}
+) {
     return new ScormApiAdapter({
         learnerId: 'learner-1',
         lessonId: 'lesson-1',
         lessonTitleSnapshot: 'Test Lesson',
         lessonOriginSnapshot: 'elsevier',
+        sourceInstitutionSnapshot: overrides.sourceInstitutionSnapshot ?? null,
         accessToken: 'token-123',
         seed,
     });
@@ -226,6 +230,28 @@ describe('ScormApiAdapter', () => {
             expect(body.learner_id).toBe('learner-1');
             expect(body.lesson_id).toBe('lesson-1');
             expect(body.completed_at).not.toBeNull();
+        });
+
+        it('includes the source institution snapshot in the persisted row', async () => {
+            const adapter = makeAdapter(null, { sourceInstitutionSnapshot: 'Springfield General' });
+            adapter.LMSInitialize('');
+            adapter.LMSCommit('');
+
+            await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+            const [, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+            const body = JSON.parse(init.body);
+            expect(body.source_institution_snapshot).toBe('Springfield General');
+        });
+
+        it('reports a null source institution snapshot for Elsevier-origin lessons', async () => {
+            const adapter = makeAdapter();
+            adapter.LMSInitialize('');
+            adapter.LMSCommit('');
+
+            await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+            const [, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+            const body = JSON.parse(init.body);
+            expect(body.source_institution_snapshot).toBeNull();
         });
 
         it('reports null scores when none have been set', async () => {

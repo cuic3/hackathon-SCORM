@@ -39,6 +39,7 @@ function lessonRow(overrides: Record<string, unknown> = {}) {
         origin: 'elsevier',
         package_id: null,
         launch_path: null,
+        source_institution: null,
         ...overrides,
     };
 }
@@ -165,6 +166,21 @@ describe('Lesson', () => {
         });
     });
 
+    it('passes the lesson\'s source institution through to the adapter', async () => {
+        mockLessonFetch(
+            lessonRow({
+                package_id: 'pkg-1',
+                launch_path: 'index.html',
+                source_institution: 'Springfield General',
+            })
+        );
+        renderLesson();
+
+        await waitFor(() => expect(adapterInstances).toHaveLength(1));
+        const args = adapterInstances[0].args as { sourceInstitutionSnapshot: string | null };
+        expect(args.sourceInstitutionSnapshot).toBe('Springfield General');
+    });
+
     it('passes a null seed when there is no prior completion', async () => {
         mockLessonFetch(lessonRow({ package_id: 'pkg-1', launch_path: 'index.html' }), null);
         renderLesson();
@@ -243,4 +259,42 @@ describe('Lesson', () => {
         renderLesson();
         expect(adapterInstances).toHaveLength(0);
     });
+
+    it(
+        'polls the completion row every 2 seconds while the lesson is playable and ready, so progress reflects live SCO writes',
+        async () => {
+            mockLessonFetch(
+                lessonRow({ package_id: 'pkg-1', launch_path: 'index.html' }),
+                completionRow({ status: 'incomplete' })
+            );
+            renderLesson();
+            await waitFor(() => expect(adapterInstances).toHaveLength(1));
+
+            const completionCallsBefore = fromMock.mock.calls.filter(
+                ([table]) => table === 'lesson_completions'
+            ).length;
+
+            await new Promise((resolve) => setTimeout(resolve, 2100));
+
+            const completionCallsAfter = fromMock.mock.calls.filter(
+                ([table]) => table === 'lesson_completions'
+            ).length;
+            expect(completionCallsAfter).toBeGreaterThan(completionCallsBefore);
+        },
+        10000
+    );
+
+    it('stops polling once the component unmounts', async () => {
+        mockLessonFetch(
+            lessonRow({ package_id: 'pkg-1', launch_path: 'index.html' }),
+            completionRow({ status: 'incomplete' })
+        );
+        const { unmount } = renderLesson();
+        await waitFor(() => expect(adapterInstances).toHaveLength(1));
+        unmount();
+
+        const callsAtUnmount = fromMock.mock.calls.length;
+        await new Promise((resolve) => setTimeout(resolve, 2100));
+        expect(fromMock.mock.calls.length).toBe(callsAtUnmount);
+    }, 10000);
 });

@@ -70,8 +70,12 @@ function lessonRow(overrides: Record<string, unknown> = {}) {
         id: 'lesson-1',
         title: 'Existing Lesson',
         description: null,
+        duration_minutes: null,
         is_active: true,
         origin: 'custom',
+        source_institution: null,
+        replaces_lesson_id: null,
+        superseded_by_lesson_id: null,
         ...overrides,
     };
 }
@@ -334,5 +338,300 @@ describe('AdminUpload', () => {
 
         await waitFor(() => expect(screen.getByText('Deactivated')).toBeInTheDocument());
         expect(screen.queryByRole('button', { name: 'Deactivate' })).not.toBeInTheDocument();
+    });
+
+    it('shows the source institution, falling back to "Unknown" when unset', async () => {
+        fromMock.mockImplementation(() =>
+            createQueryBuilder({
+                data: [
+                    lessonRow({ id: 'l1', title: 'With source', source_institution: 'Mercy Hospital' }),
+                    lessonRow({ id: 'l2', title: 'Without source', source_institution: null }),
+                ],
+                error: null,
+            })
+        );
+        render(<AdminUpload />);
+        await waitFor(() => expect(screen.getByText('With source')).toBeInTheDocument());
+
+        expect(screen.getByText('Source: Mercy Hospital')).toBeInTheDocument();
+        expect(screen.getByText('Source: Unknown')).toBeInTheDocument();
+    });
+
+    it('trims and includes the source institution on upload, sending null when left blank', async () => {
+        let capturedInsert: Record<string, unknown> | null = null;
+        let lessonsCallCount = 0;
+        fromMock.mockImplementation((table: string) => {
+            if (table === 'lessons') {
+                lessonsCallCount += 1;
+                if (lessonsCallCount === 1 || lessonsCallCount === 3) {
+                    return createQueryBuilder({ data: [], error: null });
+                }
+                const builder = createQueryBuilder({ data: lessonRow({ id: 'new-lesson' }), error: null });
+                const originalInsert = builder.insert as (payload: unknown) => unknown;
+                (builder as Record<string, unknown>).insert = vi.fn((payload: Record<string, unknown>) => {
+                    capturedInsert = payload;
+                    return originalInsert(payload);
+                });
+                return builder;
+            }
+            return createQueryBuilder({ data: [], error: null });
+        });
+        render(<AdminUpload />);
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+
+        const file = await makeScormZipFile();
+        await userEvent.upload(screen.getByLabelText('SCORM package (.zip)'), file);
+        await waitFor(() => expect(screen.getByLabelText('Title')).toHaveValue('Hand Hygiene Basics'));
+        fireEvent.change(screen.getByLabelText('Source institution (optional)'), {
+            target: { value: '  Johns Hopkins Hospital  ' },
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Upload lesson' }));
+
+        await waitFor(() => expect(capturedInsert).not.toBeNull());
+        expect(capturedInsert).toMatchObject({ source_institution: 'Johns Hopkins Hospital' });
+    });
+
+    it('shows lineage text for lessons linked via replaces/superseded_by', async () => {
+        fromMock.mockImplementation(() =>
+            createQueryBuilder({
+                data: [
+                    lessonRow({ id: 'old', title: 'Old Version', is_active: false, superseded_by_lesson_id: 'new' }),
+                    lessonRow({ id: 'new', title: 'New Version', replaces_lesson_id: 'old' }),
+                ],
+                error: null,
+            })
+        );
+        render(<AdminUpload />);
+        await waitFor(() => expect(screen.getByText('Old Version')).toBeInTheDocument());
+
+        expect(screen.getByText('Replaced by: New Version')).toBeInTheDocument();
+        expect(screen.getByText('Replaces: Old Version')).toBeInTheDocument();
+    });
+
+    describe('Replace content flow', () => {
+        it('pre-fills the form and shows a replacing banner when "Replace content" is clicked', async () => {
+            fromMock.mockImplementation(() =>
+                createQueryBuilder({
+                    data: [
+                        lessonRow({
+                            title: 'Old Course',
+                            description: 'Old description',
+                            duration_minutes: 30,
+                        }),
+                    ],
+                    error: null,
+                })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Old Course')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Replace content' }));
+
+            expect(
+                screen.getByText('Replacing content for “Old Course”.', { exact: false })
+            ).toBeInTheDocument();
+        });
+
+        it('cancelling a replace clears the banner and resets the form', async () => {
+            fromMock.mockImplementation(() =>
+                createQueryBuilder({ data: [lessonRow({ title: 'Old Course' })], error: null })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Old Course')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Replace content' }));
+            expect(screen.getByRole('status')).toHaveTextContent('Replacing content for');
+
+            fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+            expect(screen.queryByRole('status')).not.toBeInTheDocument();
+        });
+
+        it('replacing content deactivates the old lesson, links it forward, and reports success', async () => {
+            fromMock.mockImplementation(
+                createFromMock({
+                    lessons: [
+                        // initial load
+                        { data: [lessonRow({ id: 'old-1', title: 'Old Course' })], error: null },
+                        // insert new lesson
+                        { data: lessonRow({ id: 'new-1', title: 'Old Course' }), error: null },
+                        // deactivate + link old lesson
+                        { data: null, error: null },
+                        // reload
+                        {
+                            data: [
+                                lessonRow({
+                                    id: 'old-1',
+                                    title: 'Old Course',
+                                    is_active: false,
+                                    superseded_by_lesson_id: 'new-1',
+                                }),
+                                lessonRow({ id: 'new-1', title: 'Old Course', replaces_lesson_id: 'old-1' }),
+                            ],
+                            error: null,
+                        },
+                    ],
+                    content_audit_log: [
+                        { data: null, error: null },
+                        { data: null, error: null },
+                    ],
+                })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Old Course')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Replace content' }));
+            const file = await makeScormZipFile('newversion.zip', 'New Manifest Title');
+            await userEvent.upload(screen.getByLabelText('SCORM package (.zip)'), file);
+            // Replacing an existing lesson keeps its title rather than the manifest's.
+            await waitFor(() => expect(screen.getByLabelText('Title')).toHaveValue('Old Course'));
+
+            const submitButton = screen
+                .getAllByRole('button', { name: 'Replace content' })
+                .find((button) => button.getAttribute('type') === 'submit');
+            fireEvent.click(submitButton!);
+
+            await waitFor(() =>
+                expect(
+                    screen.getByText('"Old Course" replaces "Old Course" and is now available to learners.')
+                ).toBeInTheDocument()
+            );
+
+            const lessonsCalls = fromMock.mock.calls.filter(([table]) => table === 'lessons');
+            expect(lessonsCalls.length).toBeGreaterThanOrEqual(4);
+            const auditCalls = fromMock.mock.calls.filter(([table]) => table === 'content_audit_log');
+            expect(auditCalls.length).toBeGreaterThanOrEqual(2);
+
+            // The banner and form clear once the replace completes.
+            expect(screen.queryByText(/Replacing content for/)).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Reactivate', () => {
+        it('shows a Reactivate button for a deactivated lesson with no successor', async () => {
+            fromMock.mockImplementation(() =>
+                createQueryBuilder({ data: [lessonRow({ is_active: false })], error: null })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Deactivated')).toBeInTheDocument());
+            expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument();
+        });
+
+        it('hides Reactivate for a deactivated lesson that has been superseded', async () => {
+            fromMock.mockImplementation(() =>
+                createQueryBuilder({
+                    data: [
+                        lessonRow({
+                            id: 'old',
+                            title: 'Old',
+                            is_active: false,
+                            superseded_by_lesson_id: 'new',
+                        }),
+                        lessonRow({ id: 'new', title: 'New' }),
+                    ],
+                    error: null,
+                })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Old')).toBeInTheDocument());
+            expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
+        });
+
+        it('reactivating a lesson updates is_active, logs the action, and refreshes the list', async () => {
+            fromMock.mockImplementation(
+                createFromMock({
+                    lessons: [
+                        { data: [lessonRow({ is_active: false })], error: null },
+                        { data: null, error: null }, // update
+                        { data: [lessonRow({ is_active: true })], error: null }, // reload
+                    ],
+                    content_audit_log: [{ data: null, error: null }],
+                })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByRole('button', { name: 'Reactivate' })).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }));
+
+            await waitFor(() => expect(screen.getByText('Active')).toBeInTheDocument());
+            expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Edit details', () => {
+        it('opens an inline edit form pre-filled with the lesson\'s current details', async () => {
+            fromMock.mockImplementation(() =>
+                createQueryBuilder({
+                    data: [lessonRow({ title: 'Editable', description: 'Desc', duration_minutes: 25 })],
+                    error: null,
+                })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Editable')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Edit details' }));
+
+            expect(screen.getByDisplayValue('Editable')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('Desc')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('25')).toBeInTheDocument();
+        });
+
+        it('cancelling an edit discards changes without calling supabase', async () => {
+            fromMock.mockImplementation(() =>
+                createQueryBuilder({ data: [lessonRow({ title: 'Editable' })], error: null })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Editable')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Edit details' }));
+            fireEvent.change(screen.getByDisplayValue('Editable'), { target: { value: 'Changed' } });
+            fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+            expect(screen.getByText('Editable')).toBeInTheDocument();
+            expect(screen.queryByText('Changed')).not.toBeInTheDocument();
+        });
+
+        it('saving an edit updates the lesson, logs before/after, and closes the form', async () => {
+            fromMock.mockImplementation(
+                createFromMock({
+                    lessons: [
+                        { data: [lessonRow({ title: 'Editable', description: 'Old desc' })], error: null },
+                        { data: null, error: null }, // update
+                        { data: [lessonRow({ title: 'Updated Title', description: 'New desc' })], error: null },
+                    ],
+                    content_audit_log: [{ data: null, error: null }],
+                })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Editable')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Edit details' }));
+            fireEvent.change(screen.getByDisplayValue('Editable'), {
+                target: { value: 'Updated Title' },
+            });
+            fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+            await waitFor(() => expect(screen.getByText('Updated Title')).toBeInTheDocument());
+            expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+        });
+
+        it('shows an error and keeps the form open when saving an edit fails', async () => {
+            fromMock.mockImplementation(
+                createFromMock({
+                    lessons: [
+                        { data: [lessonRow({ title: 'Editable' })], error: null },
+                        { data: null, error: { message: 'update rejected' } },
+                    ],
+                })
+            );
+            render(<AdminUpload />);
+            await waitFor(() => expect(screen.getByText('Editable')).toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Edit details' }));
+            fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+            await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('update rejected'));
+            expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+        });
     });
 });

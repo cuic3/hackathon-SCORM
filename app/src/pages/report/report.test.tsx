@@ -14,6 +14,7 @@ function completionRow(overrides: Record<string, unknown> = {}) {
         id: 'row-1',
         lesson_title_snapshot: 'Hand Hygiene Basics',
         lesson_origin_snapshot: 'elsevier',
+        source_institution_snapshot: null,
         status: 'completed',
         score_raw: 90,
         score_min: 0,
@@ -110,10 +111,61 @@ describe('Report', () => {
         render(<Report />);
 
         await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
-        // Status is the 4th <td> in each row (Learner, Lesson, Origin, Status, Score).
-        expect(getRowByLessonTitle('Lesson A').cells[3]).toHaveTextContent('Not started');
-        expect(getRowByLessonTitle('Lesson B').cells[3]).toHaveTextContent('In progress');
-        expect(getRowByLessonTitle('Lesson C').cells[3]).toHaveTextContent('Completed');
+        // Status is the 5th <td> in each row (Learner, Lesson, Origin, Source, Status, Score).
+        expect(getRowByLessonTitle('Lesson A').cells[4]).toHaveTextContent('Not started');
+        expect(getRowByLessonTitle('Lesson B').cells[4]).toHaveTextContent('In progress');
+        expect(getRowByLessonTitle('Lesson C').cells[4]).toHaveTextContent('Completed');
+    });
+
+    it('shows the source institution for custom-origin lessons', async () => {
+        fromMock.mockReturnValue(
+            createQueryBuilder({
+                data: [
+                    completionRow({
+                        lesson_origin_snapshot: 'custom',
+                        source_institution_snapshot: 'Springfield General Hospital',
+                    }),
+                ],
+                error: null,
+            })
+        );
+        render(<Report />);
+
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+        expect(
+            getRowByLessonTitle('Hand Hygiene Basics').cells[3]
+        ).toHaveTextContent('Springfield General Hospital');
+    });
+
+    it('falls back to "Unknown" for a custom lesson with no recorded source institution', async () => {
+        fromMock.mockReturnValue(
+            createQueryBuilder({
+                data: [
+                    completionRow({
+                        lesson_origin_snapshot: 'custom',
+                        source_institution_snapshot: null,
+                    }),
+                ],
+                error: null,
+            })
+        );
+        render(<Report />);
+
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+        expect(getRowByLessonTitle('Hand Hygiene Basics').cells[3]).toHaveTextContent('Unknown');
+    });
+
+    it('shows an em dash for the source column on Elsevier-origin lessons', async () => {
+        fromMock.mockReturnValue(
+            createQueryBuilder({
+                data: [completionRow({ lesson_origin_snapshot: 'elsevier' })],
+                error: null,
+            })
+        );
+        render(<Report />);
+
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+        expect(getRowByLessonTitle('Hand Hygiene Basics').cells[3]).toHaveTextContent('—');
     });
 
     it('renders an empty table body when there are no completions', async () => {

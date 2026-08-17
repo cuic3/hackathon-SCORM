@@ -105,6 +105,28 @@ describe('LessonCard', () => {
         expect(screen.getByText('Completed')).toBeInTheDocument();
     });
 
+    it('shows the formatted score once completed', () => {
+        renderCard(
+            makeLesson(),
+            makeCompletion({ status: 'completed', score_raw: 82, score_min: 0, score_max: 100 })
+        );
+        expect(screen.getByText('82% (82/100)')).toBeInTheDocument();
+    });
+
+    it('does not show a score line while in progress or not started', () => {
+        const { unmount } = renderCard(makeLesson(), makeCompletion({ status: 'incomplete' }));
+        expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+        unmount();
+
+        renderCard(makeLesson({ id: 'lesson-3' }), null);
+        expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    });
+
+    it('shows "Completed — no score reported" when finished with no score', () => {
+        renderCard(makeLesson(), makeCompletion({ status: 'completed', score_raw: null }));
+        expect(screen.getByText('Completed — no score reported')).toBeInTheDocument();
+    });
+
     it('links to the lesson detail route', () => {
         renderCard(makeLesson({ id: 'lesson-42' }), null);
         expect(screen.getByRole('link', { name: /Launch lesson/ })).toHaveAttribute(
