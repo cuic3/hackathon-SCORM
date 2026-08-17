@@ -165,6 +165,18 @@ const Lesson = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [lessonId_, lessonPackageId, lessonLaunchPath, profile?.id]);
 
+    // Live score/status refresh: while a SCO is running in the iframe, poll
+    // the completion row so "Your progress" reflects LMSSetValue writes as
+    // they land, without the learner needing to click "Refresh status".
+    useEffect(() => {
+        if (!hasPlayableContent || !ready) return;
+        const interval = setInterval(() => {
+            void refreshCompletion();
+        }, 2000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [lessonId_, hasPlayableContent, ready]);
+
     if (notFound) {
         return (
             <div className={baseClassName}>

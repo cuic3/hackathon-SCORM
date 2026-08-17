@@ -10,6 +10,7 @@ import { Badge } from '@els/els-react--badge';
 import { Icon } from '@els/els-react--icon';
 import { toDisplayStatus } from '../../types/domain';
 import type { CompletionStatus, LessonWithCompletion } from '../../types/domain';
+import { formatScoreCell } from '../../utils/format-score';
 import './lesson-card.scss';
 
 const STATUS_LABEL: Record<'not-started' | 'in-progress' | 'completed', string> = {
@@ -27,6 +28,15 @@ const STATUS_PILL_COLOR: Record<'not-started' | 'in-progress' | 'completed', str
 const LessonCard = ({ lesson, completion }: LessonWithCompletion) => {
     const baseClassName = 'lesson-card';
     const displayStatus = toDisplayStatus(completion?.status as CompletionStatus | undefined);
+    const scoreText =
+        displayStatus === 'completed'
+            ? formatScoreCell(
+                  completion?.status as CompletionStatus | undefined,
+                  completion?.score_raw ?? null,
+                  completion?.score_min ?? null,
+                  completion?.score_max ?? null
+              )
+            : null;
 
     return (
         <Card className={baseClassName} role="listitem">
@@ -52,6 +62,9 @@ const LessonCard = ({ lesson, completion }: LessonWithCompletion) => {
                     {STATUS_LABEL[displayStatus]}
                 </Pill>
             </div>
+            {scoreText ? (
+                <p className={`${baseClassName}__score`}>{scoreText}</p>
+            ) : null}
             <div className={`${baseClassName}__footer`}>
                 <Link
                     to={`/lesson/${lesson.id}`}
