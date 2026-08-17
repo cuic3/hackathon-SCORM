@@ -12,12 +12,21 @@ export interface ParsedManifest {
  * Validates a SCORM 1.2 package structure and extracts the launch path +
  * title from imsmanifest.xml. Uses getElementsByTagName (namespace-agnostic)
  * rather than CSS selectors, since the manifest declares a default XML
- * namespace that querySelector doesn't match against.
+ * namespace that querySelector doesn't match against. Rejects manifests
+ * whose <metadata><schemaversion> isn't exactly "1.2" (e.g. SCORM 1.1 or
+ * SCORM 2004 packages).
  */
 export function parseManifest(xml: string): ParsedManifest {
     const doc = new DOMParser().parseFromString(xml, 'application/xml');
     if (doc.getElementsByTagName('parsererror').length > 0) {
         throw new Error('This SCORM package\'s imsmanifest.xml could not be parsed.');
+    }
+
+    const schemaVersion = doc.getElementsByTagName('schemaversion')[0]?.textContent?.trim();
+    if (schemaVersion !== '1.2') {
+        throw new Error(
+            `This app only supports SCORM 1.2 packages. Found schema version "${schemaVersion ?? 'unknown'}".`
+        );
     }
 
     const organizationsEl = doc.getElementsByTagName('organizations')[0];
