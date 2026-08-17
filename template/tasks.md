@@ -15,6 +15,7 @@
 - [x] [T9] Rebrand app to "Clinical Learning Hub" (header wordmark, login copy, typo fix) — n/a (polish) — Campbell Isherwood — `8ec7ca3`, `757739b`, `9b3bf46`
 - [x] [T10] Enable real SCORM playback for Elsevier-origin lessons: generalize the player gate from `origin === 'custom'` to content-availability, author 4 real SCORM packages via the `generate-scorm-lessons` skill, backfill via `seed-elsevier-content.mjs` — US-2.1 (§3.3 scope update) — Rory Myers — `dd9d948`
 - [x] [T11] Resolve spec-drift: align "no score reported" display text between `format-score.ts` and `spec.md` so code and spec say the same thing — US-3.3, §8 edge case — Michelle Zuckerberg — `0c2b238`
+- [x] [T15] Build the full re-upload/replace flow: "Replace content" (new `lessons` row + old row `is_active=false`/`superseded_by_lesson_id`), "Reactivate", and metadata-only "Edit details", each logging its own `content_audit_log` action (`upload`+`previous_lesson_id`, `reactivate`, `edit`); lineage ("Replaces:"/"Replaced by:") shown in the admin lesson list — US-4.1 — Claude (pairing with Campbell Isherwood) — uncommitted
 
 ### Thin Slice
 Smallest subset that produced a working end-to-end path: T4, T6, T7, T8 (login → admin upload → real SCORM completion → educator report).
@@ -24,7 +25,6 @@ Smallest subset that produced a working end-to-end path: T4, T6, T7, T8 (login �
 - [ ] [T12] Fill in `spec.md` §9/§9.1 Verify Table by re-testing every AC against the running system — all US IDs — unassigned
 - [ ] [T13] Log an actual `metrics.md` checkpoint (tasks planned/completed, ACs passing, deviations, AI-vs-human notes) — spec §4 MUST — unassigned
 - [ ] [T14] Confirm seeded "not started" Elsevier lessons actually appear in the educator report (report.tsx currently queries from `lesson_completions`, not `lessons` — verify against live data) — US-3.1 — unassigned
-- [ ] [T15] Build the full re-upload/replace flow (`replaces_lesson_id`/`superseded_by_lesson_id` columns and the `reactivate`/`edit` audit actions exist in schema but are unused by the UI) — US-4.1 — unassigned
 
 ## Cut / Deferred
 <!-- Keep the reason. Scope change should remain visible. -->
