@@ -1,3 +1,7 @@
+# OUTDATED — superseded by spec.md
+<!-- Kept for history only. This file's original structure/section numbering does not match
+     the team's spec.md template. All current content lives in spec.md — edit that file, not this one. -->
+
 # spec.md — Custom Content Uploader (SCORM) · <Team Name>
 <!-- BUSINESS SPEC · the WHAT and WHY. No tech decisions here — those go in plan.md.
      Source: CS Product Brief — Custom Content Uploader (SCORM) · Clinical Learning Hub -->
@@ -53,13 +57,13 @@ As a nurse educator, I want recorded completions to survive content-management c
 
 ### Named assumptions
 - **A1 — Valid-package assumption:** For the P1 demo, the supplied sample SCORM 1.2 package is treated as a valid supported package.  
-  **Owner:** <name>  
+  **Owner:** Campbell Isherwood, Claire Cui  
   **Tripwire:** The supplied package cannot be parsed/launched using the SCORM 1.2 contract described in the brief.
 - **A2 — Score availability assumption:** The P1 sample package reports a score that can be shown in the final report.  
-  **Owner:** <name>  
+  **Owner:** Michelle Zuckerberg  
   **Tripwire:** Inspection of the supplied package/runtime shows that no score is reported.
 - **A3 — Single-learner thin-slice assumption:** One learner completing one custom package is sufficient to prove the end-to-end P1 loop described in the brief.  
-  **Owner:** <name>  
+  **Owner:** Rory Myers  
   **Tripwire:** Mentor/product clarification requires multiple learners, packages, or assignments for the demo to satisfy the brief.
 
 ## 6. Out of Scope  ⟵ the most important section
