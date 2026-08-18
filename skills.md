@@ -11,6 +11,7 @@
 | 4 | Spec-Drift Guard | The moment build reality disagrees with spec.md |
 | 5 | Checkpoint Retro Capture | Every checkpoint + final demo |
 | 6 | Sync Docs With Commit | Right after pushing a feature/fix — reconcile plan.md/tasks.md with what actually shipped |
+| 7 | Generate SCORM Lessons | Adding sample/demo lesson content beyond the seeded golf package |
 
 ---
 
@@ -90,3 +91,13 @@
   (Defaults to the most recent commit/`HEAD`, or the current uncommitted diff if that's more likely "what I just built." Name a different commit/range if needed.)
 - **Example output:** Marks the tasks a diff completes as done in `tasks.md`, adds any undocumented work traced to its AC ID, updates `plan.md` status for anything that moved from "TODO"/risk to shipped — and if the diff adds behavior not covered by any AC or touches something in §6 Out of Scope, stops and flags it for a human-confirmed `spec.md` update instead of guessing.
 - **Why it helped:** This is exactly the gap T18/T24/T30/T35 kept falling into — features landing before their scope note/AC/Verify row existed. Running this right after each push turns that into a same-session fix instead of a later review finding.
+
+## Skill 7 — Generate SCORM Lessons (`generate-scorm-lessons`)
+- **Context:** Use when expanding the demo catalog beyond the one seeded golf sample — new Elsevier-flavored or custom-flavored lesson packages. Both origins share the identical SCORM 1.2 package format and runtime contract per `spec.md` §3.3; origin is purely a `lessons.origin` data-model distinction, not a packaging difference.
+- **Prompt:**
+  ```
+  /generate-scorm-lessons
+  ```
+  (Reads `spec.md`, the reference package under `sample-content/RuntimeBasicCalls_SCORM12/`, `app/src/utils/scorm-manifest.ts`, and `app/src/utils/scorm-api-adapter.ts` before authoring anything — those are ground truth for what the app actually accepts, not a generic SCORM 1.2 reference.)
+- **Example output:** New `.zip` packages under `sample-content/generated/`, each with a root-level `imsmanifest.xml`, 2-3 content pages plus a scored assessment page, and bookmarking via `cmi.core.lesson_location` — plus a summary per package and a flagged follow-up (Elsevier-flavored packages need a `lessons` row inserted; custom-flavored ones go through `/admin/upload` by a human).
+- **Why it helped:** Keeps generated content honest to the host app's actual constraints (exact `cmi.*` element allowlist, manifest shape the parser requires) instead of a generic SCORM 1.2 tutorial that silently fails upload or playback.
