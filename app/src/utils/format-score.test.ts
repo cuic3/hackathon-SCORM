@@ -30,6 +30,21 @@ describe('formatScoreCell', () => {
         );
     });
 
+    it('returns "No score reported" (no "Completed —" prefix) for audience: learner', () => {
+        expect(formatScoreCell('completed', null, null, null, { audience: 'learner' })).toBe(
+            'No score reported'
+        );
+        expect(formatScoreCell('passed', null, null, null, { audience: 'learner' })).toBe(
+            'No score reported'
+        );
+    });
+
+    it('audience: learner does not change the "In progress" wording', () => {
+        expect(formatScoreCell('incomplete', null, null, null, { audience: 'learner' })).toBe(
+            'In progress'
+        );
+    });
+
     it('treats score undefined the same as null', () => {
         expect(formatScoreCell('completed', undefined as unknown as null, null, null)).toBe(
             'Completed — no score reported'

@@ -39,6 +39,7 @@ describe('Login', () => {
             profile: null,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderLogin();
@@ -53,6 +54,7 @@ describe('Login', () => {
             profile: null,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderLogin();
@@ -65,6 +67,7 @@ describe('Login', () => {
             profile: null,
             loading: true,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderLogin();
@@ -78,6 +81,7 @@ describe('Login', () => {
             profile: null,
             loading: false,
             signIn,
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderLogin();
@@ -96,6 +100,7 @@ describe('Login', () => {
             profile: null,
             loading: false,
             signIn,
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderLogin();
@@ -121,6 +126,7 @@ describe('Login', () => {
             profile: null,
             loading: false,
             signIn,
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderLogin();
@@ -146,6 +152,7 @@ describe('Login', () => {
             profile: null,
             loading: false,
             signIn,
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderLogin();

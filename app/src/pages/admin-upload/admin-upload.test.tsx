@@ -95,6 +95,7 @@ describe('AdminUpload', () => {
             profile: { id: 'admin-1', organization_id: 'org-1' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
     });

@@ -52,6 +52,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 |---|---|---|---|
 | US-2.1 | A SCORM 1.2 lesson is available (custom-uploaded or seeded Elsevier content — see §3.3 scope update) | Learner launches it | The real SCORM lesson runs (real runtime, not a mock screen) |
 | US-2.2 | Learner completes the lesson; package reports completion + score | Session finishes | Completion and score are recorded for that learner |
+| US-2.5 | A lesson is finished but the package reported no score | Learner views their own lesson/profile view | Shows `"No score reported"` (no "Completed —" prefix, distinct from §3.3's report wording — the learner is already looking at their own completed lesson, so restating "Completed" is redundant) |
 
 **Runtime contract (MUST implement, see §5 for full technical detail):**
 - Hosting app MUST expose a window-discoverable LMS API object the SCO can find and call (SCORM 1.2 API discovery convention).
@@ -66,7 +67,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 | US-3.2 | A custom lesson appears in the report | Educator reviews the record | Its custom origin is clearly marked |
 | US-3.3 | A learner completed a custom lesson | Report is viewed | Recorded completion and score are visible |
 
-**Display rule (MUST):** wherever a score is shown, display both percentage and raw value, e.g. `"78% (78/100)"`. When no score is reported: a **completed** lesson shows `"Completed — no score reported"` (never blank/dash); an **incomplete/in-progress** lesson shows `"In progress"`.
+**Display rule (MUST):** wherever a score is shown, display both percentage and raw value, e.g. `"78% (78/100)"`. On **this report specifically**: when no score is reported, a completed lesson shows `"Completed — no score reported"` (never blank/dash); an incomplete/in-progress lesson shows `"In progress"`. (On the learner's own lesson/profile view, the no-score wording is shorter — see US-2.5. The two views deliberately say different things for the same underlying state; don't "fix" one to match the other.)
 
 **Seed data requirement:** seed 3–5 Elsevier lesson records with mixed states (some completed with scores, some incomplete, some not started) so the report doesn't look sparse.
 
@@ -76,13 +77,23 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 | AC ID | Given | When | Then |
 |---|---|---|---|
 | US-4.1 | A learner has a recorded completion | Related custom content is re-uploaded, deactivated, or otherwise changed | The existing completion record remains available in the report, exactly as before |
+| US-4.3 | An active custom lesson | Admin uploads new content via "Replace content" | A new `lessons` row is created (new package/manifest); the old row is deactivated and linked to the new one; any existing completions for the old row are untouched |
+| US-4.4 | A deactivated custom lesson that has **not** been replaced/superseded | Admin clicks "Reactivate" | The lesson becomes active again and reappears in the learner's available lessons; a superseded lesson (one replaced via US-4.3) MUST NOT offer this action — it can only be replaced again |
+| US-4.5 | A custom lesson | Admin edits title/description/duration via "Edit details" | Metadata updates in place; `package_id`/`launch_path` are never touched by this action (content changes only go through US-4.3) |
 
-**MUST NOT**: ever lose or mutate a recorded completion as a side effect of content management actions (re-upload, deactivate, edit).
+**MUST NOT**: ever lose or mutate a recorded completion as a side effect of content management actions (re-upload, deactivate, reactivate, edit).
+
+### 3.5 Learner self-service signup (US-5, NEW — see A4, not yet confirmed)
+| AC ID | Given | When | Then |
+|---|---|---|---|
+| US-5.1 | A prospective learner with no existing account | Submits the signup form with a valid email/password and picks an existing seeded organization | A new learner profile is created against that organization and they can subsequently log in |
+
+**Scope note (honest, not a confirmed addition):** this was built (`/signup`, `auth-context.tsx`'s `signUpLearner`) without going through this document first — unlike every other scope change in this spec, no owner has confirmed it belongs here, and it sits in direct tension with §4's "accounts are synthetic/seeded" rule. Documenting it here so it's not silently invisible, not endorsing it as settled — see A4.
 
 ## 4. Business Rules (cross-cutting)
 - **MUST**: demonstrator is standalone — no dependency on / integration with real Clinical Learning Hub.
 - **MUST**: only SCORM 1.2 is supported (not 2004, not xAPI, not AICC).
-- **MUST**: all org/user/Elsevier-lesson data is synthetic/seeded.
+- **MUST**: all org/user/Elsevier-lesson data is synthetic/seeded. (§3.5/A4: learner self-service signup currently in the codebase is in tension with this rule and is not yet confirmed as an exception.)
 - **MUST NOT**: fabricate a completion state or score that the package did not report (see Edge Cases, §5).
 - **MUST**: at every `metrics.md` checkpoint, log — tasks planned vs. completed; ACs currently passing; any scope/behavior deviation and whether `spec.md` was updated first; one thing AI got right; one thing a human had to fix; and (End of Event only) one concrete "what didn't work."
 
@@ -113,19 +124,22 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 | A1 | The supplied sample SCORM 1.2 package is treated as valid/supported for the P1 demo | Campbell Isherwood, Claire Cui | Supplied package cannot be parsed/launched per the SCORM 1.2 contract described |
 | A2 | The P1 sample package reports a score usable in the final report | Michelle Zuckerberg | Inspection shows no score is reported |
 | A3 | One learner completing one custom package is sufficient to prove the P1 loop | Rory Myers | Mentor/product clarification requires multiple learners/packages/assignments |
+| A4 | Learner self-service signup (§3.5, `/signup`) is in scope, even though letting any visitor create a learner account against a seeded organization is in tension with §4's "all org/user data is synthetic/seeded" rule — **built without a Scope addition note or a confirmed owner, unlike A1–A3 and the source-institution/Elsevier-playback scope updates elsewhere in this doc** | **unassigned — needs explicit team confirmation** | Team/mentor decides self-signup contradicts the "closed, seeded accounts" demo model, or the SMTP/email-confirmation risk in §8 turns out to block login entirely |
 
 ## 8. Edge Cases Checklist (implement handling for all of these)
 - [ ] Missing `imsmanifest.xml` → reject upload with clear error; nothing added.
 - [ ] Package launches but never reports completion → preserve actual state; do not fabricate completion.
-- [ ] Package reports no score → show `"Completed — no score reported"` if the lesson is completed, or `"In progress"` if it isn't; never a blank/dash either way.
+- [ ] Package reports no score → never a blank/dash. Incomplete → `"In progress"` everywhere. Completed → `"Completed — no score reported"` on the educator report (§3.3), `"No score reported"` on the learner's own view (§3.2, US-2.5) — deliberately different wording per audience, not a bug.
 - [ ] Previously completed lesson's content is re-uploaded/deactivated → historical completion still visible, unchanged.
 - [ ] Custom + seeded Elsevier lesson shown together → origin must stay visually unambiguous.
 - [ ] Learner exits mid-lesson (`cmi.core.exit = "suspend"` + bookmarked location) → relaunch resumes at bookmark, not restart.
 - [ ] A lesson (either origin) has no `package_id`/`launch_path` set → show a "content not yet available" placeholder; MUST NOT attempt to render an iframe or construct a SCORM adapter for it.
 - [ ] A custom lesson is uploaded with no source institution entered → displays as "Unknown", never blank; Elsevier-origin lessons never show a source institution value at all.
+- [ ] Admin replaces, reactivates, or edits a custom lesson → each action is logged as its own `content_audit_log` entry (`upload`+`previous_lesson_id` / `reactivate` / `edit`); a superseded lesson (already replaced) MUST NOT show a "Reactivate" option.
+- [ ] A learner signs up via self-service signup (see A4) whose account requires email confirmation → since no SMTP is configured for this demo (`plan.md` §2.1), they may never receive a confirmation email and be unable to log in; MUST be verified against the live Supabase auth settings before relying on this path in a demo.
 
 ## 9. Verify Table
-Fill this in at feature freeze by re-testing every AC above against the running system. Do not invent new IDs — use the ones defined in §3.
+Fill this in at feature freeze by re-testing every AC above against the running system. Every ID here MUST have a matching Given/When/Then row in §3 — if it doesn't, it belongs in §9.1 instead (a deliberate, append-only exception for ACs discovered after §3 was first drafted — see §9.1's own note).
 
 | AC | Scenario | Verdict | Notes |
 |---|---|---|---|
@@ -133,13 +147,18 @@ Fill this in at feature freeze by re-testing every AC above against the running 
 | US-1.2 | Custom lesson origin is distinguishable | PASS / FAIL | |
 | US-2.1 | Learner launches real SCORM content | PASS / FAIL | Verify against both a custom-uploaded lesson and a seeded Elsevier lesson (§3.3 scope update) |
 | US-2.2 | Completion and score are recorded | PASS / FAIL | |
+| US-2.5 | Learner's own view shows "No score reported" (no "Completed —") for a finished lesson with no score | PASS / FAIL | |
 | US-3.1 | Elsevier + custom records appear together | PASS / FAIL | |
 | US-3.2 | Custom origin is marked in report | PASS / FAIL | |
 | US-3.3 | Completion + score visible in report | PASS / FAIL | |
 | US-4.1 | Recorded completion survives content change | PASS / FAIL | |
+| US-4.3 | Replace content deactivates the old lesson, links to the new one, leaves existing completions untouched | PASS / FAIL | |
+| US-4.4 | Reactivate restores a deactivated (non-superseded) lesson; superseded lessons never show Reactivate | PASS / FAIL | |
+| US-4.5 | Edit details updates metadata only, never package_id/launch_path | PASS / FAIL | |
+| US-5.1 | Self-service signup creates a learner profile and allows login | PASS / FAIL | Blocked on A4 (not yet confirmed as in-scope) and the SMTP/email-confirmation risk in §8 |
 
 ### 9.1 Additional ACs (added during spec refinement)
-These were introduced after the original verification table was drafted (login flows, resume, invalid-upload, no-score display, audit log). Tracked here separately so they don't get mixed into the original table above.
+These were introduced after the original verification table was drafted (login flows, resume, invalid-upload, no-score display, audit log) and never got folded back into a §3 Given/When/Then row. This section is §9's one deliberate exception to "every ID needs a §3 row" — an append-only home for ACs discovered after §3 was first drafted, not an invitation to skip writing the §3 row for new ACs going forward (US-2.5/US-4.3/US-4.4/US-4.5/US-5.1 above got real §3 rows; the ones below didn't and are grandfathered here instead of being backfilled, since backfilling them isn't worth the time on this clock).
 
 | AC | Scenario | Verdict | Notes |
 |---|---|---|---|

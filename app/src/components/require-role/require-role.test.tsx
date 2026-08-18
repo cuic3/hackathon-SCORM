@@ -62,6 +62,7 @@ describe('RequireRole', () => {
             profile: null,
             loading: true,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderWithRouter(['learner']);
@@ -74,6 +75,7 @@ describe('RequireRole', () => {
             profile: null,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderWithRouter(['learner']);
@@ -86,6 +88,7 @@ describe('RequireRole', () => {
             profile: null,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderWithRouter(['learner']);
@@ -98,6 +101,7 @@ describe('RequireRole', () => {
             profile: { role: 'learner' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderWithRouter(['learner']);
@@ -110,6 +114,7 @@ describe('RequireRole', () => {
             profile: { role: 'admin' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderWithRouter(['learner']);
@@ -122,6 +127,7 @@ describe('RequireRole', () => {
             profile: { role: 'educator' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderWithRouter(['learner']);

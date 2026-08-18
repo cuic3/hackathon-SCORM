@@ -88,6 +88,7 @@ describe('Lesson', () => {
             profile: { id: 'learner-1' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
     });
@@ -253,6 +254,7 @@ describe('Lesson', () => {
             profile: null,
             loading: true,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         mockLessonFetch(lessonRow({ package_id: 'pkg-1', launch_path: 'index.html' }));

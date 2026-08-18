@@ -34,7 +34,8 @@ const LessonCard = ({ lesson, completion }: LessonWithCompletion) => {
                   completion?.status as CompletionStatus | undefined,
                   completion?.score_raw ?? null,
                   completion?.score_min ?? null,
-                  completion?.score_max ?? null
+                  completion?.score_max ?? null,
+                  { audience: 'learner' }
               )
             : null;
 

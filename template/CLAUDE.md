@@ -16,4 +16,9 @@
 - Keep `plan.md` and `tasks.md` synchronized with the current spec.
 
 ## Stack & conventions
-- <Team fills this in after the technical approach is chosen>
+- **Frontend:** React 17 + TypeScript, built with Vite. Routing via `react-router-dom` v5.
+- **UI:** Elsevier's internal Leyden/ELS design system (`@els/els-styleguide-core` + `@els/els-react--*`). Plain SCSS per component (no CSS Modules), BEM-ish class naming.
+- **Backend/data:** Supabase (Postgres + Auth + Storage). Schema and RLS are documented in `plan.md` §2.1; treat that section as the source of truth for the data model, not this file.
+- **Tests:** Vitest (`cd app && npm test`). Node ≥22.14/≥24 required for the test runner (jsdom/undici) — see `plan.md`'s Verification section for the `nvm`/`PATH` gotcha if `npm test` crashes with a `webidl` error on this machine's default Node 20.
+- **Run commands:** `cd app && npm install && npm run dev` (serves at `localhost:5173`). Full command list in `plan.md` §1.
+- See `plan.md` for the full architecture, key decisions, and risks — this section is intentionally a summary, not a duplicate.

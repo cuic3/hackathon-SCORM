@@ -27,6 +27,7 @@ function authAs(role: 'admin' | 'learner' | 'educator' | null) {
         profile: role ? ({ role } as never) : null,
         loading: false,
         signIn: vi.fn(),
+        signUpLearner: vi.fn(),
         signOut: vi.fn(),
     });
 }
