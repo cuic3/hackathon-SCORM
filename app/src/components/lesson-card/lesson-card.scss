@@ -2,10 +2,26 @@
 @use '../../assets/styles/mixins' as *;
 
 .lesson-card {
-    @include display-flex;
-    @include flex-direction(column);
-    gap: 0.75rem;
-    height: 100%;
+    height: 11rem;
+
+    // The Card component wraps children in its own internal
+    // .c-els-card__content > .c-els-card__content-inner divs, so our real
+    // children (header/description/meta/footer) are two levels below
+    // .lesson-card itself and never saw its flex layout. That left them
+    // stacked by plain block flow, so short cards ended up with all their
+    // slack space stuck below the footer instead of centered. Targeting
+    // content-inner directly fixes both.
+    .c-els-card__content {
+        height: 100%;
+    }
+
+    .c-els-card__content-inner {
+        @include display-flex;
+        @include flex-direction(column);
+        @include justify-content(center);
+        gap: 0.75rem;
+        height: 100%;
+    }
 
     &__header {
         @include display-flex;
@@ -18,12 +34,19 @@
     &__title {
         margin: 0;
         font-size: 1.125rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     &__description {
         margin: 0;
         color: tools.$els-color-n6;
-        flex-grow: 1;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 
     &__meta {
@@ -46,13 +69,18 @@
     }
 
     &__footer {
-        margin-top: auto;
+        @include display-flex;
+        @include flex-direction(row);
+        @include justify-content(space-between);
+        align-items: center;
+        gap: 0.5rem;
     }
 
     &__launch-link {
         display: inline-flex;
         align-items: center;
         gap: 0.25rem;
+        margin-left: auto;
         color: tools.$els-color-secondary;
         font-weight: 600;
         text-decoration: none;
