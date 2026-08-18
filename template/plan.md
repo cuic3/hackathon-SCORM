@@ -188,9 +188,12 @@ Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_l
 
 ### 2.10 Learner self-service signup (US-5.1 — NOT a confirmed scope addition, see A4)
 
-`app/src/pages/signup/signup.tsx` + `auth-context.tsx`'s `signUpLearner`: a `/signup` route where anyone can create a learner account (email/password via `supabase.auth.signUp`, picking from the existing seeded `organizations` list) and get a `profiles` row inserted with `role='learner'`.
+`app/src/pages/signup/signup.tsx` + `auth-context.tsx`'s `signUpLearner`: a `/signup` route where anyone can create a learner account, picking from the existing seeded `organizations` list. As of the latest fix (`054b3da`), `display_name`/`organization_id` are passed as Supabase Auth user metadata (`supabase.auth.signUp({ ..., options: { data: {...} } })`) rather than inserted into `profiles` directly from the client — the client-side code no longer writes a `profiles` row itself at all.
 
-**This is flagged, not endorsed.** Unlike source institution (§2.8) and Elsevier real playback (§2.7), this landed with no scope note in `spec.md` before or during the build, and it sits in direct tension with the "accounts are synthetic/seeded" business rule (`spec.md` §4). Two concrete risks, neither verified yet:
+**This implies a `profiles`-row-creation trigger on `auth.users` now exists on the live Supabase project** (the standard pattern: a Postgres function reading `raw_user_meta_data`, fired `on insert` into `auth.users`) — **but no such trigger is documented in §2.1's schema block, and this session has no live DB access to confirm one actually exists.** If it doesn't, signup succeeds (creates an `auth.users` row) but the learner has no `profiles` row and nothing else in the app will work for them (every query joins through `profiles`). Someone with Supabase dashboard/MCP access should confirm this trigger exists and, if so, add it to §2.1.
+
+**This is flagged, not endorsed.** Unlike source institution (§2.8) and Elsevier real playback (§2.7), this landed with no scope note in `spec.md` before or during the build, and it sits in direct tension with the "accounts are synthetic/seeded" business rule (`spec.md` §4). Concrete risks, none verified yet:
+- The undocumented-trigger risk above.
 - If the live Supabase project requires email confirmation before login, self-signed-up users may never receive a confirmation email — no SMTP is configured for this demo (§2.1's seed-data note explains why seeded accounts bypass this via a direct `email_confirmed_at = now()` insert, which self-signup doesn't get).
 - It's an open door: any visitor to the running app can create an account, which may or may not be acceptable given the demo target is local `npm run dev` only (§1).
 

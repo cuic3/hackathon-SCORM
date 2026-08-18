@@ -137,6 +137,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 - [ ] A custom lesson is uploaded with no source institution entered → displays as "Unknown", never blank; Elsevier-origin lessons never show a source institution value at all.
 - [ ] Admin replaces, reactivates, or edits a custom lesson → each action is logged as its own `content_audit_log` entry (`upload`+`previous_lesson_id` / `reactivate` / `edit`); a superseded lesson (already replaced) MUST NOT show a "Reactivate" option.
 - [ ] A learner signs up via self-service signup (see A4) whose account requires email confirmation → since no SMTP is configured for this demo (`plan.md` §2.1), they may never receive a confirmation email and be unable to log in; MUST be verified against the live Supabase auth settings before relying on this path in a demo.
+- [ ] A learner signs up via self-service signup → they need a matching `profiles` row created via an `auth.users` trigger (client code no longer inserts one directly, as of `054b3da`); this trigger isn't documented in `plan.md` §2.1 and isn't confirmed to exist on the live project — MUST be verified before relying on this path (see `plan.md` §2.10).
 
 ## 9. Verify Table
 Fill this in at feature freeze by re-testing every AC above against the running system. Every ID here MUST have a matching Given/When/Then row in §3 — if it doesn't, it belongs in §9.1 instead (a deliberate, append-only exception for ACs discovered after §3 was first drafted — see §9.1's own note).
