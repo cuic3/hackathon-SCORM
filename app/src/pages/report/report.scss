@@ -6,6 +6,17 @@
     padding: 1rem 2.5rem;
     margin: 0 auto;
 
+    &__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+
+        h1 {
+            margin-top: 0;
+        }
+    }
+
     &__subtitle {
         color: tools.$els-color-n6;
     }

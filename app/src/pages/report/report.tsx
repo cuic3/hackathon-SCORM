@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 // @ts-ignore
 import { Badge } from '@els/els-react--badge';
+// @ts-ignore
+import { Button } from '@els/els-react--button';
 import { supabase } from '../../utils/supabase';
 import { formatScoreCell } from '../../utils/format-score';
 import { toDisplayStatus } from '../../types/domain';
@@ -24,6 +26,39 @@ const STATUS_LABEL: Record<string, string> = {
     'in-progress': 'In progress',
     completed: 'Completed',
 };
+
+// Shared by both the on-screen table and the CSV export so the two can never
+// disagree (spec.md §3.3 US-3.6: export reflects exactly what's displayed).
+function originText(origin: LessonOrigin | null): string {
+    if (origin === 'custom') return 'Custom content';
+    if (origin === 'elsevier') return 'Elsevier';
+    return '—';
+}
+
+function sourceText(row: ReportRow): string {
+    return row.origin === 'custom' ? row.sourceInstitution ?? 'Unknown' : '—';
+}
+
+function csvCell(value: string): string {
+    return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+function buildReportCsv(rows: ReportRow[]): string {
+    const header = ['Learner', 'Lesson', 'Origin', 'Source', 'Status', 'Score'];
+    const lines = rows.map((row) =>
+        [
+            row.learnerName,
+            row.lessonTitle ?? 'No lessons started yet',
+            originText(row.origin),
+            sourceText(row),
+            STATUS_LABEL[toDisplayStatus(row.status)],
+            formatScoreCell(row.status, row.scoreRaw, row.scoreMin, row.scoreMax),
+        ]
+            .map(csvCell)
+            .join(',')
+    );
+    return [header.join(','), ...lines].join('\r\n');
+}
 
 const Report = () => {
     const baseClassName = 'report';
@@ -149,15 +184,35 @@ const Report = () => {
         void load();
     }, []);
 
+    const handleExportCsv = () => {
+        const csv = buildReportCsv(rows);
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `completion-report-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <div className={baseClassName}>
-            <h1 id="my-content" tabIndex={-1}>
-                Completion report
-            </h1>
-            <p className={`${baseClassName}__subtitle`}>
-                Elsevier and custom-content completions appear together here,
-                with each record&rsquo;s origin clearly marked.
-            </p>
+            <div className={`${baseClassName}__header`}>
+                <div>
+                    <h1 id="my-content" tabIndex={-1}>
+                        Completion report
+                    </h1>
+                    <p className={`${baseClassName}__subtitle`}>
+                        Elsevier and custom-content completions appear together here,
+                        with each record&rsquo;s origin clearly marked.
+                    </p>
+                </div>
+                <Button type="secondary" htmlType="button" onClick={handleExportCsv} disabled={loading}>
+                    Export CSV
+                </Button>
+            </div>
 
             {loading ? (
                 <p>Loading…</p>
@@ -181,17 +236,11 @@ const Report = () => {
                                 <td>
                                     {row.origin === 'custom' ? (
                                         <Badge content="Custom content" type="subtle" />
-                                    ) : row.origin === 'elsevier' ? (
-                                        'Elsevier'
                                     ) : (
-                                        '—'
+                                        originText(row.origin)
                                     )}
                                 </td>
-                                <td>
-                                    {row.origin === 'custom'
-                                        ? row.sourceInstitution ?? 'Unknown'
-                                        : '—'}
-                                </td>
+                                <td>{sourceText(row)}</td>
                                 <td>{STATUS_LABEL[toDisplayStatus(row.status)]}</td>
                                 <td>
                                     {formatScoreCell(
