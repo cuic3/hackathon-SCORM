@@ -53,6 +53,9 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 | US-2.1 | A SCORM 1.2 lesson is available (custom-uploaded or seeded Elsevier content — see §3.3 scope update) | Learner launches it | The real SCORM lesson runs (real runtime, not a mock screen) |
 | US-2.2 | Learner completes the lesson; package reports completion + score | Session finishes | Completion and score are recorded for that learner |
 | US-2.5 | A lesson is finished but the package reported no score | Learner views their own lesson/profile view | Shows `"No score reported"` (no "Completed —" prefix, distinct from §3.3's report wording — the learner is already looking at their own completed lesson, so restating "Completed" is redundant) |
+| US-2.6 | A completed lesson reported a score below 70% | Learner views their available lessons list | The lesson shows a `"Failed"` status (distinct from `"Completed"`) instead of a passing completion, and the launch link reads `"Retake lesson"` instead of `"Review lesson"`, allowing the learner to relaunch it |
+
+**Scope addition — pass/fail threshold (confirmed with Rory Myers):** 70% of `cmi.core.score.raw` (scaled against `.min`/`.max`) is the passing bar for the demo. This applies only to the learner's own lesson-card display (`lesson-card.tsx`) — it does not change what's persisted (the actual reported score/status is still recorded as-is, per §4's "MUST NOT fabricate a completion state or score" rule) and does not add a new `lesson_completions.status` value; "Failed" is a display-only derivation (`score_raw < 70%` of an otherwise `completed` record), not a new stored state. The educator report (§3.3) is unaffected by this AC — it continues to show the raw score/status, not a Failed label.
 
 **Runtime contract (MUST implement, see §5 for full technical detail):**
 - Hosting app MUST expose a window-discoverable LMS API object the SCO can find and call (SCORM 1.2 API discovery convention).
@@ -88,7 +91,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 |---|---|---|---|
 | US-5.1 | A prospective learner with no existing account | Submits the signup form with a valid email/password and picks an existing seeded organization | A new learner profile is created against that organization and they can subsequently log in |
 
-**Scope note (confirmed in scope — Claire Cui, 2026-08-18):** `/signup` is not exposed to the public — it is only used to create synthetic/seeded learner accounts against an existing seeded organization, the same category of data §4 already calls synthetic/seeded. It does not conflict with §4's rule; it's a path for producing that same seeded data, not a public-registration feature. See A4 (resolved).
+**Scope note (confirmed in scope — Claire Cui, 2026-08-18):** `/signup` is not exposed to the public — it is only used to create synthetic/seeded learner accounts against an existing seeded organization, the same category of data §4 already calls synthetic/seeded. It does not conflict with §4's rule; it's a path for producing that same seeded data, not a public-registration feature. See A4.
 
 ## 4. Business Rules (cross-cutting)
 - **MUST**: demonstrator is standalone — no dependency on / integration with real Clinical Learning Hub.
@@ -149,6 +152,7 @@ Fill this in at feature freeze by re-testing every AC above against the running 
 | US-2.1 | Learner launches real SCORM content | PASS / FAIL | Verify against both a custom-uploaded lesson and a seeded Elsevier lesson (§3.3 scope update) |
 | US-2.2 | Completion and score are recorded | PASS / FAIL | |
 | US-2.5 | Learner's own view shows "No score reported" (no "Completed —") for a finished lesson with no score | PASS / FAIL | |
+| US-2.6 | Completed lesson scoring below 70% shows "Failed" + "Retake lesson" on the learner's lesson card; educator report unaffected | PASS / FAIL | |
 | US-3.1 | Elsevier + custom records appear together | PASS / FAIL | |
 | US-3.2 | Custom origin is marked in report | PASS / FAIL | |
 | US-3.3 | Completion + score visible in report | PASS / FAIL | |

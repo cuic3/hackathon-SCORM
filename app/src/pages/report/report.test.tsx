@@ -21,6 +21,7 @@ function completionRow(overrides: Record<string, unknown> = {}) {
     return {
         id: 'row-1',
         learner_id: 'learner-1',
+        lesson_id: 'lesson-1',
         lesson_title_snapshot: 'Hand Hygiene Basics',
         lesson_origin_snapshot: 'elsevier',
         source_institution_snapshot: null,
@@ -32,20 +33,37 @@ function completionRow(overrides: Record<string, unknown> = {}) {
     };
 }
 
+function lessonRow(overrides: Record<string, unknown> = {}) {
+    return {
+        id: 'lesson-1',
+        title: 'Hand Hygiene Basics',
+        origin: 'elsevier',
+        source_institution: null,
+        ...overrides,
+    };
+}
+
 function mockTables({
     learners = [],
+    lessons = [],
     completions = [],
     learnersError = null,
+    lessonsError = null,
     completionsError = null,
 }: {
     learners?: unknown[];
+    lessons?: unknown[];
     completions?: unknown[];
     learnersError?: unknown;
+    lessonsError?: unknown;
     completionsError?: unknown;
 } = {}) {
     fromMock.mockImplementation((table: string) => {
         if (table === 'profiles') {
             return createQueryBuilder({ data: learners, error: learnersError });
+        }
+        if (table === 'lessons') {
+            return createQueryBuilder({ data: lessons, error: lessonsError });
         }
         return createQueryBuilder({ data: completions, error: completionsError });
     });
@@ -100,6 +118,71 @@ describe('Report', () => {
         const row = screen.getByText('New Learner').closest('tr') as HTMLTableRowElement;
         expect(within(row).getByText('No lessons started yet')).toBeInTheDocument();
         expect(within(row).getAllByText('Not started')).toHaveLength(2);
+    });
+
+    it('shows "Not started" for an active lesson a learner has never touched, even though they completed a different one', async () => {
+        mockTables({
+            learners: [learnerRow()],
+            lessons: [
+                lessonRow({ id: 'lesson-1', title: 'Hand Hygiene Basics' }),
+                lessonRow({ id: 'lesson-2', title: 'Sepsis Recognition', origin: 'custom' }),
+            ],
+            completions: [completionRow({ lesson_id: 'lesson-1', status: 'completed' })],
+        });
+        render(<Report />);
+
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+        expect(
+            within(getRowByLessonTitle('Hand Hygiene Basics')).getByText('Completed')
+        ).toBeInTheDocument();
+
+        const untouchedRow = getRowByLessonTitle('Sepsis Recognition');
+        expect(within(untouchedRow).getByText('Ada Lovelace')).toBeInTheDocument();
+        expect(within(untouchedRow).getByText('Not started')).toBeInTheDocument();
+    });
+
+    it('synthesizes a "Not started" row per active lesson for a learner with no completions at all, instead of one placeholder', async () => {
+        mockTables({
+            learners: [learnerRow({ id: 'learner-2', display_name: 'New Learner' })],
+            lessons: [
+                lessonRow({ id: 'lesson-1', title: 'Hand Hygiene Basics' }),
+                lessonRow({ id: 'lesson-2', title: 'Sepsis Recognition' }),
+            ],
+            completions: [],
+        });
+        render(<Report />);
+
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+        expect(screen.queryByText('No lessons started yet')).not.toBeInTheDocument();
+        expect(
+            within(getRowByLessonTitle('Hand Hygiene Basics')).getByText('New Learner')
+        ).toBeInTheDocument();
+        expect(
+            within(getRowByLessonTitle('Sepsis Recognition')).getByText('New Learner')
+        ).toBeInTheDocument();
+    });
+
+    it('still shows a completion whose lesson has since been deactivated (missing from the active lessons list)', async () => {
+        mockTables({
+            learners: [learnerRow()],
+            lessons: [lessonRow({ id: 'lesson-2', title: 'Sepsis Recognition' })],
+            completions: [
+                completionRow({
+                    lesson_id: 'lesson-1',
+                    lesson_title_snapshot: 'Retired Lesson',
+                    status: 'completed',
+                }),
+            ],
+        });
+        render(<Report />);
+
+        await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+        expect(
+            within(getRowByLessonTitle('Retired Lesson')).getByText('Completed')
+        ).toBeInTheDocument();
+        // The learner has a real row (their retired-lesson completion), so no
+        // spurious "No lessons started yet" placeholder should also appear.
+        expect(screen.queryByText('No lessons started yet')).not.toBeInTheDocument();
     });
 
     it('falls back to "Unknown learner" when a completion has no matching profile', async () => {

@@ -235,4 +235,4 @@ Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_l
 - `get_advisors` (Supabase MCP) after migration to catch any RLS/security lint issues.
 - Confirm a missing-`imsmanifest.xml` zip is rejected with the required error and creates nothing (check no `lessons`/Storage rows were written).
 - Confirm deactivating/re-uploading custom content leaves existing `lesson_completions` rows unchanged in the report (US-4.1), and that a superseded lesson never shows "Reactivate" (US-4.4).
-- Before treating self-service signup (§2.10) as demo-ready: confirm on the live Supabase project whether email confirmation is required, and get an explicit team call on whether it's in scope at all (A4).
+- Self-service signup (§2.10) is confirmed in-scope (A4) and email confirmation was verified working end-to-end; the `profiles`-row-creation trigger on `auth.users` still needs confirmation against the live project.
