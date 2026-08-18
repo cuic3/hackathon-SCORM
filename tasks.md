@@ -46,6 +46,7 @@
 - [x] [T39] Added Skill 6 — Sync Docs With Commit to `skills.md`, documenting `/sync-docs-with-commit` (index entry + prompt block, matching the existing format) — n/a (doc fix) — Claude (this session)
 
 - [x] [T42] Learner-facing origin pills (`lesson-card.tsx` and `lesson.tsx`) now show the custom lesson's actual `source_institution` instead of the generic "Custom content" label, falling back to "Custom" (not the report's "Unknown") when unset — a deliberate learner-only exception, confirmed with Rory Myers and recorded in `spec.md` §3.1 and `plan.md` §2.1's component list. Updated `lesson-card.test.tsx`/`lesson.test.tsx` assertions accordingly; full suite 200/200, `tsc -b --noEmit` clean, `npm run build` clean — US-1.2/US-1.5 (carve-out) — Claude (this session)
+- [x] [T13] Logged real `metrics.md` checkpoints: Checkpoint 1 (end of Day 1, through `9f63f04`) and Checkpoint 2 (mid Day 2, through `20e3f1d`) — tasks planned/completed, ACs passing, scope deviations and whether reflected in `spec.md` first, AI-vs-human judgment, friction — spec §4 MUST — Michelle Zuckerberg — this session
 
 ## Reviews / Audits
 <!-- QA passes against spec.md — don't build features, but every open item in "Next" traces to one of these. -->
@@ -58,7 +59,7 @@ Smallest subset that produced a working end-to-end path: T4, T6, T7, T8 (login �
 
 ## Next
 <!-- Gaps identified by re-checking the running build against spec.md — not yet started. -->
-- [ ] [T13] Log an actual `metrics.md` checkpoint (tasks planned/completed, ACs passing, deviations, AI-vs-human notes) — spec §4 MUST — unassigned
+(none open)
 
 ## Cut / Deferred
 <!-- Keep the reason. Scope change should remain visible. -->
