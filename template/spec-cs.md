@@ -2,7 +2,7 @@
 <!-- Kept for history only. This file's original structure/section numbering does not match
      the team's spec.md template. All current content lives in spec.md — edit that file, not this one. -->
 
-# spec.md — Custom Content Uploader (SCORM) · <Team Name>
+# spec.md — Custom Content Uploader (SCORM) · SCORMed
 <!-- BUSINESS SPEC · the WHAT and WHY. No tech decisions here — those go in plan.md.
      Source: CS Product Brief — Custom Content Uploader (SCORM) · Clinical Learning Hub -->
 

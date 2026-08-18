@@ -1,4 +1,4 @@
-# plan.md — Custom Content Uploader (SCORM) · <Team Name>
+# plan.md — Custom Content Uploader (SCORM) · SCORMed
 <!-- TECHNICAL APPROACH: the HOW, derived from the current spec.
      If this contradicts spec.md, resolve the contradiction before building. -->
 

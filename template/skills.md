@@ -1,4 +1,4 @@
-# skills.md — <Team Name>
+# skills.md — SCORMed
 <!-- Capture only patterns another team could use without asking you what you meant. -->
 <!-- Copy a "Prompt" block verbatim into Claude Code — no paraphrasing, no filling in context from memory. -->
 

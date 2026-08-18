@@ -1,4 +1,4 @@
-# metrics.md — <Team Name>
+# metrics.md — SCORMed
 <!-- Lightweight capture. Update at checkpoints; accuracy matters more than polish. -->
 
 ## Baseline

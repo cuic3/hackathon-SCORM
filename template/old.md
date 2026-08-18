@@ -1,4 +1,4 @@
-# spec.md — Custom Content Uploader (SCORM) · <Team Name>
+# spec.md — Custom Content Uploader (SCORM) · SCORMed
 <!-- BUSINESS SPEC: the WHAT and WHY. Keep implementation decisions in plan.md.
      Aim for clarity and testability, not length.
      Source: CS Product Brief — Custom Content Uploader (SCORM) · Clinical Learning Hub -->
