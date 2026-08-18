@@ -1,7 +1,7 @@
 ---
 name: sync-docs-with-commit
 description: |
-  Sync template/plan.md and template/tasks.md with what a recent commit (or the
+  Sync plan.md and tasks.md with what a recent commit (or the
   current uncommitted diff) actually built. Never edits spec.md — spec.md is the
   human-owned source of truth per CLAUDE.md's working agreement, so a commit that
   looks like it changed scope or behavior only gets flagged for human review, not
@@ -26,7 +26,7 @@ is no background process watching the repo.
   changes and no explicit target was given, prefer diffing those (`git diff HEAD`)
   over `HEAD~1..HEAD`, since that's more likely what the user means by "what I just
   built."
-- Docs: `template/plan.md`, `template/tasks.md`, `template/spec.md` (read-only).
+- Docs: `plan.md`, `tasks.md`, `spec.md` (read-only).
 
 ## Steps
 
@@ -34,13 +34,13 @@ is no background process watching the repo.
    skim the commit message(s) in range — they often state intent more clearly than
    the diff alone.
 
-2. **Read `template/spec.md`, `template/plan.md`, `template/tasks.md` in full** before
+2. **Read `spec.md`, `plan.md`, `tasks.md` in full** before
    editing anything. Do not guess at existing structure — match each file's existing
    section numbering/format (see `## 6. Build order / tasks` in plan.md, the AC-ID
    table format in spec.md, and tasks.md's own list style) rather than introducing a
    new format.
 
-3. **Update `template/tasks.md`:**
+3. **Update `tasks.md`:**
    - Mark tasks that the diff completes as done, using whatever "done" convention the
      file already uses (checkbox, status column, etc.) — check the file first.
    - If the diff implements work not yet listed as a task, add it under the
@@ -48,7 +48,7 @@ is no background process watching the repo.
      doesn't trace to any AC, say so explicitly in the addition rather than inventing
      a rationale.
 
-4. **Update `template/plan.md`:**
+4. **Update `plan.md`:**
    - Where the plan already describes this piece of work as "not yet implemented" /
      "TODO" / a risk, update that status to reflect it's now built, referencing the
      commit.
@@ -59,7 +59,7 @@ is no background process watching the repo.
    - Do not add speculative future work here beyond what the diff/commit message
      actually indicates.
 
-5. **Never edit `template/spec.md`.** Instead, compare the diff against spec.md's
+5. **Never edit `spec.md`.** Instead, compare the diff against spec.md's
    scope (§6 Out of Scope) and acceptance criteria (§3, §8 Edge Cases). If the commit:
    - adds behavior not covered by any existing AC,
    - touches something listed in §6 Out of Scope, or

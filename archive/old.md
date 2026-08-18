@@ -1,3 +1,8 @@
+# OUTDATED — superseded by spec.md
+<!-- Kept for history only. This was spec.md before it was reformatted into the
+     agent-consumable structure (stable AC IDs, MUST/SHOULD framing). All current
+     content lives in /spec.md — edit that file, not this one. -->
+
 # spec.md — Custom Content Uploader (SCORM) · SCORMed
 <!-- BUSINESS SPEC: the WHAT and WHY. Keep implementation decisions in plan.md.
      Aim for clarity and testability, not length.
