@@ -10,6 +10,7 @@
 | 3 | QE Verify-Against-AC | After every finished task, any sprint |
 | 4 | Spec-Drift Guard | The moment build reality disagrees with spec.md |
 | 5 | Checkpoint Retro Capture | Every checkpoint + final demo |
+| 6 | Sync Docs With Commit | Right after pushing a feature/fix — reconcile plan.md/tasks.md with what actually shipped |
 
 ---
 
@@ -79,3 +80,13 @@
   ```
 - **Example output:** Gives you the demo's required failure section pre-written instead of scrambled together at 2pm on Day 2.
 - **Why it helped:** Turns a scored requirement into a running log instead of a last-minute reconstruction.
+
+## Skill 6 — Sync Docs With Commit (`/sync-docs-with-commit`)
+- **Context:** Run right after pushing a feature/fix, or whenever `plan.md`/`tasks.md` have drifted from what actually got built. Never touches `spec.md` — it's human-owned per `CLAUDE.md`'s working agreement, so a commit that looks like it changed scope only gets flagged for a human to confirm, not silently rewritten.
+- **Prompt:**
+  ```
+  /sync-docs-with-commit
+  ```
+  (Defaults to the most recent commit/`HEAD`, or the current uncommitted diff if that's more likely "what I just built." Name a different commit/range if needed.)
+- **Example output:** Marks the tasks a diff completes as done in `tasks.md`, adds any undocumented work traced to its AC ID, updates `plan.md` status for anything that moved from "TODO"/risk to shipped — and if the diff adds behavior not covered by any AC or touches something in §6 Out of Scope, stops and flags it for a human-confirmed `spec.md` update instead of guessing.
+- **Why it helped:** This is exactly the gap T18/T24/T30/T35 kept falling into — features landing before their scope note/AC/Verify row existed. Running this right after each push turns that into a same-session fix instead of a later review finding.
