@@ -186,18 +186,13 @@ Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_l
 
 **Documentation gap this closes:** this feature was fully built (commit `275ed13`) before `spec.md` had any AC, edge case, or Verify row for it — flagged by review and fixed together with this plan.md write-up (see `spec.md` §3.4 US-4.3/4.4/4.5, §8, §9).
 
-### 2.10 Learner self-service signup (US-5.1 — NOT a confirmed scope addition, see A4)
+### 2.10 Learner self-service signup (US-5.1 — in scope, see A4)
 
-`app/src/pages/signup/signup.tsx` + `auth-context.tsx`'s `signUpLearner`: a `/signup` route where anyone can create a learner account, picking from the existing seeded `organizations` list. As of the latest fix (`054b3da`), `display_name`/`organization_id` are passed as Supabase Auth user metadata (`supabase.auth.signUp({ ..., options: { data: {...} } })`) rather than inserted into `profiles` directly from the client — the client-side code no longer writes a `profiles` row itself at all.
+`app/src/pages/signup/signup.tsx` + `auth-context.tsx`'s `signUpLearner`: a `/signup` route where a learner can create an account, picking from the existing seeded `organizations` list. Not exposed to the public — it only ever produces synthetic/seeded learner accounts against a seeded organization (`spec.md` §3.5/A4), so it doesn't conflict with the "accounts are synthetic/seeded" business rule (`spec.md` §4). As of the latest fix (`054b3da`), `display_name`/`organization_id` are passed as Supabase Auth user metadata (`supabase.auth.signUp({ ..., options: { data: {...} } })`) rather than inserted into `profiles` directly from the client — the client-side code no longer writes a `profiles` row itself at all.
 
 **This implies a `profiles`-row-creation trigger on `auth.users` now exists on the live Supabase project** (the standard pattern: a Postgres function reading `raw_user_meta_data`, fired `on insert` into `auth.users`) — **but no such trigger is documented in §2.1's schema block, and this session has no live DB access to confirm one actually exists.** If it doesn't, signup succeeds (creates an `auth.users` row) but the learner has no `profiles` row and nothing else in the app will work for them (every query joins through `profiles`). Someone with Supabase dashboard/MCP access should confirm this trigger exists and, if so, add it to §2.1.
 
-**This is flagged, not endorsed.** Unlike source institution (§2.8) and Elsevier real playback (§2.7), this landed with no scope note in `spec.md` before or during the build, and it sits in direct tension with the "accounts are synthetic/seeded" business rule (`spec.md` §4). Concrete risks, none verified yet:
-- The undocumented-trigger risk above.
-- If the live Supabase project requires email confirmation before login, self-signed-up users may never receive a confirmation email — no SMTP is configured for this demo (§2.1's seed-data note explains why seeded accounts bypass this via a direct `email_confirmed_at = now()` insert, which self-signup doesn't get).
-- It's an open door: any visitor to the running app can create an account, which may or may not be acceptable given the demo target is local `npm run dev` only (§1).
-
-Documented here so it's visible and testable, not silently shipped — see `spec.md` §3.5/A4 for the open-assumption tracking. Needs an explicit team decision, not a unilateral one from whoever's fixing docs.
+**Email confirmation:** the live Supabase project does require email confirmation before login (unlike the seeded accounts in §2.1, which bypass it via a direct `email_confirmed_at = now()` insert). Verified end-to-end (Claire Cui) that the confirmation email is delivered and the signup → confirm → login path works, so the "no SMTP configured" concern raised earlier does not block this path.
 
 ## 3. Key Decisions
 - Built as a **separate standalone project** (`hackathon-SCORM/app`), not inside `ecl-neuron-app` — matches the spec's "standalone demonstrator" constraint and avoids touching the production CLH codebase.
@@ -221,7 +216,7 @@ Documented here so it's visible and testable, not silently shipped — see `spec
 ## Alignment Check
 - [x] The full P1 loop (login → upload → launch/complete → report) is built and covered by §2.1–§2.6, plus the later additions in §2.7–§2.10.
 - [x] Two ambiguities (demo/deploy target, seed credentials) were surfaced to the product owner rather than guessed, and resolved before finalizing this plan — see §1 and §3.
-- [ ] **One exception to "nothing here contradicts spec.md":** §2.10 (learner self-service signup) is built but flagged, not confirmed — it's documented as an open assumption (`spec.md` A4), not asserted as aligned. Don't check this box until the team makes an explicit call on it.
+- [x] §2.10 (learner self-service signup) is built and confirmed in-scope (`spec.md` A4) — not public-facing, only produces synthetic/seeded accounts.
 
 ## 6. Build order / tasks (to also populate `tasks.md`)
 1. **Schema + seed** (§2.1) — no UI changes yet.
@@ -230,7 +225,7 @@ Documented here so it's visible and testable, not silently shipped — see `spec
 4. **Content lifecycle** (§2.9): Replace content / Reactivate / Edit details — DONE (`275ed13`); admin-only audit log *view* (surfacing `content_audit_log` in the UI) is still not built.
 5. **Elsevier real playback**: generalize the SCORM player to any origin with package content; author + backfill real Elsevier packages (see §2.7) — DONE.
 6. **Source institution tracking** (§2.8): apply the schema migration (**blocking — not yet run**), then the code is already wired.
-7. **Learner self-service signup** (§2.10): built, but **not yet confirmed as in-scope** — see A4. Needs a team decision before it counts as done rather than as a flagged risk.
+7. **Learner self-service signup** (§2.10): built and confirmed in-scope (A4) — DONE. The `profiles`-row-creation trigger on `auth.users` is still unverified against the live project.
 8. **Polish**: multiple learners/packages if time allows, upload UX polish.
 
 ## Verification
@@ -240,4 +235,4 @@ Documented here so it's visible and testable, not silently shipped — see `spec
 - `get_advisors` (Supabase MCP) after migration to catch any RLS/security lint issues.
 - Confirm a missing-`imsmanifest.xml` zip is rejected with the required error and creates nothing (check no `lessons`/Storage rows were written).
 - Confirm deactivating/re-uploading custom content leaves existing `lesson_completions` rows unchanged in the report (US-4.1), and that a superseded lesson never shows "Reactivate" (US-4.4).
-- Before treating self-service signup (§2.10) as demo-ready: confirm on the live Supabase project whether email confirmation is required, and get an explicit team call on whether it's in scope at all (A4).
+- Self-service signup (§2.10) is confirmed in-scope (A4) and email confirmation was verified working end-to-end; the `profiles`-row-creation trigger on `auth.users` still needs confirmation against the live project.

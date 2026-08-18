@@ -33,46 +33,87 @@ const Report = () => {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
-            const [{ data: learners }, { data: completions }] = await Promise.all([
-                supabase.from('profiles').select('id, display_name').eq('role', 'learner'),
+            const [{ data: learners }, { data: lessons }, { data: completions }] = await Promise.all([
+                supabase.from('profiles').select('id, display_name').eq('role', 'learner').order('display_name'),
+                supabase
+                    .from('lessons')
+                    .select('id, title, origin, source_institution')
+                    .eq('is_active', true)
+                    .order('title'),
                 supabase
                     .from('lesson_completions')
                     .select(
-                        'id, learner_id, lesson_title_snapshot, lesson_origin_snapshot, source_institution_snapshot, status, score_raw, score_min, score_max'
-                    )
-                    .order('lesson_title_snapshot'),
+                        'id, learner_id, lesson_id, lesson_title_snapshot, lesson_origin_snapshot, source_institution_snapshot, status, score_raw, score_min, score_max'
+                    ),
             ]);
 
-            const completionsByLearner = new Map<string, any[]>();
-            (completions ?? []).forEach((row: any) => {
-                const existing = completionsByLearner.get(row.learner_id) ?? [];
-                existing.push(row);
-                completionsByLearner.set(row.learner_id, existing);
+            const learnerNameById = new Map(
+                (learners ?? []).map((learner: any) => [learner.id, learner.display_name ?? 'Unknown learner'])
+            );
+            const completionByLearnerAndLesson = new Map(
+                (completions ?? []).map((row: any) => [`${row.learner_id}:${row.lesson_id}`, row])
+            );
+            const consumedCompletionIds = new Set<string>();
+            const rowCountByLearner = new Map<string, number>();
+            const nextRows: ReportRow[] = [];
+
+            const pushRow = (learnerId: string | null, row: ReportRow) => {
+                if (learnerId) {
+                    rowCountByLearner.set(learnerId, (rowCountByLearner.get(learnerId) ?? 0) + 1);
+                }
+                nextRows.push(row);
+            };
+
+            // Every known learner × every active lesson — synthesizes "Not
+            // started" (from the live `lessons` row, since there's no
+            // snapshot yet) for any pair with no completion, so a learner
+            // who's completed lesson A but never touched lesson B still
+            // shows lesson B as "Not started" instead of not appearing at
+            // all.
+            (learners ?? []).forEach((learner: any) => {
+                (lessons ?? []).forEach((lesson: any) => {
+                    const completion = completionByLearnerAndLesson.get(`${learner.id}:${lesson.id}`);
+                    if (completion) {
+                        consumedCompletionIds.add(completion.id);
+                        pushRow(learner.id, {
+                            id: completion.id,
+                            learnerName: learnerNameById.get(learner.id) ?? 'Unknown learner',
+                            lessonTitle: completion.lesson_title_snapshot,
+                            origin: completion.lesson_origin_snapshot,
+                            sourceInstitution: completion.source_institution_snapshot,
+                            status: completion.status,
+                            scoreRaw: completion.score_raw,
+                            scoreMin: completion.score_min,
+                            scoreMax: completion.score_max,
+                        });
+                    } else {
+                        pushRow(learner.id, {
+                            id: `not-started-${learner.id}-${lesson.id}`,
+                            learnerName: learnerNameById.get(learner.id) ?? 'Unknown learner',
+                            lessonTitle: lesson.title,
+                            origin: lesson.origin,
+                            sourceInstitution: lesson.source_institution,
+                            status: 'not-started',
+                            scoreRaw: null,
+                            scoreMin: null,
+                            scoreMax: null,
+                        });
+                    }
+                });
             });
 
-            const knownLearnerIds = new Set((learners ?? []).map((learner: any) => learner.id));
-
-            const nextRows: ReportRow[] = [];
-            (learners ?? []).forEach((learner: any) => {
-                const learnerCompletions = completionsByLearner.get(learner.id) ?? [];
-                if (learnerCompletions.length === 0) {
-                    nextRows.push({
-                        id: `learner-${learner.id}`,
-                        learnerName: learner.display_name ?? 'Unknown learner',
-                        lessonTitle: null,
-                        origin: null,
-                        sourceInstitution: null,
-                        status: null,
-                        scoreRaw: null,
-                        scoreMin: null,
-                        scoreMax: null,
-                    });
-                    return;
-                }
-                learnerCompletions.forEach((row) => {
-                    nextRows.push({
+            // Completions the grid above didn't cover — the lesson has since
+            // been deactivated/superseded (so it's missing from the active
+            // `lessons` list), or the completion's learner_id no longer
+            // matches a role='learner' profile. Still shown, using their own
+            // frozen snapshot fields, so a recorded completion is never lost
+            // (spec.md US-4.1).
+            (completions ?? [])
+                .filter((row: any) => !consumedCompletionIds.has(row.id))
+                .forEach((row: any) => {
+                    pushRow(row.learner_id, {
                         id: row.id,
-                        learnerName: learner.display_name ?? 'Unknown learner',
+                        learnerName: learnerNameById.get(row.learner_id) ?? 'Unknown learner',
                         lessonTitle: row.lesson_title_snapshot,
                         origin: row.lesson_origin_snapshot,
                         sourceInstitution: row.source_institution_snapshot,
@@ -82,21 +123,23 @@ const Report = () => {
                         scoreMax: row.score_max,
                     });
                 });
-            });
 
-            (completions ?? [])
-                .filter((row: any) => !knownLearnerIds.has(row.learner_id))
-                .forEach((row: any) => {
+            // A learner who ended up with zero rows (no active lessons at
+            // all, and no completions) would otherwise vanish from the
+            // report entirely — keep them visible.
+            (learners ?? [])
+                .filter((learner: any) => !rowCountByLearner.get(learner.id))
+                .forEach((learner: any) => {
                     nextRows.push({
-                        id: row.id,
-                        learnerName: 'Unknown learner',
-                        lessonTitle: row.lesson_title_snapshot,
-                        origin: row.lesson_origin_snapshot,
-                        sourceInstitution: row.source_institution_snapshot,
-                        status: row.status,
-                        scoreRaw: row.score_raw,
-                        scoreMin: row.score_min,
-                        scoreMax: row.score_max,
+                        id: `learner-${learner.id}`,
+                        learnerName: learnerNameById.get(learner.id) ?? 'Unknown learner',
+                        lessonTitle: null,
+                        origin: null,
+                        sourceInstitution: null,
+                        status: null,
+                        scoreRaw: null,
+                        scoreMin: null,
+                        scoreMax: null,
                     });
                 });
 
