@@ -9,7 +9,8 @@
         "preview": "vite preview",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "test:e2e": "playwright test"
     },
     "dependencies": {
         "@els/els-react--badge": "^3.3.99",
@@ -28,6 +29,7 @@
         "react-router-dom": "^5.3.4"
     },
     "devDependencies": {
+        "@playwright/test": "^1.62.1",
         "@testing-library/jest-dom": "^7.0.1",
         "@testing-library/react": "^12.1.5",
         "@testing-library/user-event": "^13.5.0",

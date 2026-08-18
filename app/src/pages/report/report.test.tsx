@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { createQueryBuilder } from '../../test/mocks/supabase';
 
@@ -289,5 +289,84 @@ describe('Report', () => {
 
         await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
         expect(screen.getByRole('table')).toBeInTheDocument();
+    });
+
+    describe('Export CSV', () => {
+        let createObjectURL: ReturnType<typeof vi.fn>;
+        let revokeObjectURL: ReturnType<typeof vi.fn>;
+        let anchorClickSpy: ReturnType<typeof vi.spyOn>;
+
+        beforeEach(() => {
+            createObjectURL = vi.fn(() => 'blob:mock-url');
+            revokeObjectURL = vi.fn();
+            // jsdom doesn't implement these — stub them so the download path
+            // is exercised without touching a real object URL/anchor.
+            (URL as unknown as { createObjectURL: typeof createObjectURL }).createObjectURL =
+                createObjectURL;
+            (URL as unknown as { revokeObjectURL: typeof revokeObjectURL }).revokeObjectURL =
+                revokeObjectURL;
+            anchorClickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+        });
+
+        it('is disabled while the report is still loading', () => {
+            mockTables({ learners: [], completions: [] });
+            render(<Report />);
+            expect(screen.getByRole('button', { name: 'Export CSV' })).toBeDisabled();
+        });
+
+        it('downloads a CSV with a header-only row when the report has no data', async () => {
+            mockTables({ learners: [], completions: [] });
+            render(<Report />);
+            await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+
+            expect(createObjectURL).toHaveBeenCalledTimes(1);
+            const blob = createObjectURL.mock.calls[0][0] as Blob;
+            expect(blob.type).toBe('text/csv;charset=utf-8;');
+            await expect(blob.text()).resolves.toBe('Learner,Lesson,Origin,Source,Status,Score');
+            expect(anchorClickSpy).toHaveBeenCalledTimes(1);
+            expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+        });
+
+        it('exports one CSV row per displayed report row with the same formatting shown on screen', async () => {
+            mockTables({
+                learners: [learnerRow()],
+                completions: [
+                    completionRow({
+                        lesson_origin_snapshot: 'custom',
+                        source_institution_snapshot: 'Springfield General Hospital',
+                    }),
+                ],
+            });
+            render(<Report />);
+            await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+
+            const blob = createObjectURL.mock.calls[0][0] as Blob;
+            const csv = await blob.text();
+            expect(csv).toBe(
+                [
+                    'Learner,Lesson,Origin,Source,Status,Score',
+                    'Ada Lovelace,Hand Hygiene Basics,Custom content,Springfield General Hospital,Completed,90% (90/100)',
+                ].join('\r\n')
+            );
+        });
+
+        it('quotes CSV values that contain a comma', async () => {
+            mockTables({
+                learners: [learnerRow({ display_name: 'Lovelace, Ada' })],
+                completions: [completionRow()],
+            });
+            render(<Report />);
+            await waitFor(() => expect(screen.queryByText('Loading…')).not.toBeInTheDocument());
+
+            fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+
+            const blob = createObjectURL.mock.calls[0][0] as Blob;
+            const csv = await blob.text();
+            expect(csv.split('\r\n')[1]).toMatch(/^"Lovelace, Ada",/);
+        });
     });
 });

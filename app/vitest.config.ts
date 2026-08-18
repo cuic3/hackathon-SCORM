@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'node:path';
 
@@ -23,5 +23,9 @@ export default defineConfig({
         setupFiles: ['./src/test/setup.ts'],
         css: false,
         restoreMocks: true,
+        // e2e/ holds real-browser Playwright specs (npm run test:e2e), not
+        // Vitest tests — its `test`/`expect` come from @playwright/test and
+        // aren't compatible with Vitest's runner.
+        exclude: [...configDefaults.exclude, 'e2e/**'],
     },
 });
