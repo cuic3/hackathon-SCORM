@@ -10,10 +10,10 @@ import './report.scss';
 interface ReportRow {
     id: string;
     learnerName: string;
-    lessonTitle: string;
-    origin: LessonOrigin;
+    lessonTitle: string | null;
+    origin: LessonOrigin | null;
     sourceInstitution: string | null;
-    status: CompletionStatus;
+    status: CompletionStatus | null;
     scoreRaw: number | null;
     scoreMin: number | null;
     scoreMax: number | null;
@@ -33,26 +33,74 @@ const Report = () => {
     useEffect(() => {
         const load = async () => {
             setLoading(true);
-            const { data } = await supabase
-                .from('lesson_completions')
-                .select(
-                    'id, lesson_title_snapshot, lesson_origin_snapshot, source_institution_snapshot, status, score_raw, score_min, score_max, learner:profiles!lesson_completions_learner_id_fkey(display_name)'
-                )
-                .order('lesson_title_snapshot');
+            const [{ data: learners }, { data: completions }] = await Promise.all([
+                supabase.from('profiles').select('id, display_name').eq('role', 'learner'),
+                supabase
+                    .from('lesson_completions')
+                    .select(
+                        'id, learner_id, lesson_title_snapshot, lesson_origin_snapshot, source_institution_snapshot, status, score_raw, score_min, score_max'
+                    )
+                    .order('lesson_title_snapshot'),
+            ]);
 
-            setRows(
-                (data ?? []).map((row: any) => ({
-                    id: row.id,
-                    learnerName: row.learner?.display_name ?? 'Unknown learner',
-                    lessonTitle: row.lesson_title_snapshot,
-                    origin: row.lesson_origin_snapshot,
-                    sourceInstitution: row.source_institution_snapshot,
-                    status: row.status,
-                    scoreRaw: row.score_raw,
-                    scoreMin: row.score_min,
-                    scoreMax: row.score_max,
-                }))
-            );
+            const completionsByLearner = new Map<string, any[]>();
+            (completions ?? []).forEach((row: any) => {
+                const existing = completionsByLearner.get(row.learner_id) ?? [];
+                existing.push(row);
+                completionsByLearner.set(row.learner_id, existing);
+            });
+
+            const knownLearnerIds = new Set((learners ?? []).map((learner: any) => learner.id));
+
+            const nextRows: ReportRow[] = [];
+            (learners ?? []).forEach((learner: any) => {
+                const learnerCompletions = completionsByLearner.get(learner.id) ?? [];
+                if (learnerCompletions.length === 0) {
+                    nextRows.push({
+                        id: `learner-${learner.id}`,
+                        learnerName: learner.display_name ?? 'Unknown learner',
+                        lessonTitle: null,
+                        origin: null,
+                        sourceInstitution: null,
+                        status: null,
+                        scoreRaw: null,
+                        scoreMin: null,
+                        scoreMax: null,
+                    });
+                    return;
+                }
+                learnerCompletions.forEach((row) => {
+                    nextRows.push({
+                        id: row.id,
+                        learnerName: learner.display_name ?? 'Unknown learner',
+                        lessonTitle: row.lesson_title_snapshot,
+                        origin: row.lesson_origin_snapshot,
+                        sourceInstitution: row.source_institution_snapshot,
+                        status: row.status,
+                        scoreRaw: row.score_raw,
+                        scoreMin: row.score_min,
+                        scoreMax: row.score_max,
+                    });
+                });
+            });
+
+            (completions ?? [])
+                .filter((row: any) => !knownLearnerIds.has(row.learner_id))
+                .forEach((row: any) => {
+                    nextRows.push({
+                        id: row.id,
+                        learnerName: 'Unknown learner',
+                        lessonTitle: row.lesson_title_snapshot,
+                        origin: row.lesson_origin_snapshot,
+                        sourceInstitution: row.source_institution_snapshot,
+                        status: row.status,
+                        scoreRaw: row.score_raw,
+                        scoreMin: row.score_min,
+                        scoreMax: row.score_max,
+                    });
+                });
+
+            setRows(nextRows);
             setLoading(false);
         };
         void load();
@@ -86,12 +134,14 @@ const Report = () => {
                         {rows.map((row) => (
                             <tr key={row.id}>
                                 <td>{row.learnerName}</td>
-                                <td>{row.lessonTitle}</td>
+                                <td>{row.lessonTitle ?? 'No lessons started yet'}</td>
                                 <td>
                                     {row.origin === 'custom' ? (
                                         <Badge content="Custom content" type="subtle" />
-                                    ) : (
+                                    ) : row.origin === 'elsevier' ? (
                                         'Elsevier'
+                                    ) : (
+                                        '—'
                                     )}
                                 </td>
                                 <td>
