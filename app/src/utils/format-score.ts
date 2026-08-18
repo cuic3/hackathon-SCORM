@@ -14,7 +14,7 @@ export function formatScoreCell(
     if (!status || status === 'not-started') return 'Not started';
 
     if (raw === null || raw === undefined) {
-        return status === 'incomplete' ? 'In progress' : 'Completed — no score reported';
+        return status === 'incomplete' ? 'In progress' : 'No score reported';
     }
 
     const effectiveMin = min ?? 0;

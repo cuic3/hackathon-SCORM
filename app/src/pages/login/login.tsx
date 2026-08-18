@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Redirect } from 'react-router-dom';
+import { Link, Redirect } from 'react-router-dom';
 // @ts-ignore
 import { Button } from '@els/els-react--button';
 // @ts-ignore
@@ -70,6 +70,9 @@ const Login = () => {
                         {submitting ? 'Signing in…' : 'Sign in'}
                     </Button>
                 </form>
+                <p className={`${baseClassName}__signup-link`}>
+                    New learner? <Link to="/signup">Create an account</Link>
+                </p>
             </Card>
         </div>
     );

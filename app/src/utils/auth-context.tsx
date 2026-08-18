@@ -13,6 +13,12 @@ interface AuthState {
     profile: Profile | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+    signUpLearner: (
+        email: string,
+        password: string,
+        displayName: string,
+        organizationId: string
+    ) => Promise<{ error: string | null }>;
     signOut: () => Promise<void>;
 }
 
@@ -90,12 +96,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { error: error?.message ?? null };
     };
 
+    const signUpLearner = async (
+        email: string,
+        password: string,
+        displayName: string,
+        organizationId: string
+    ) => {
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if (error) {
+            return { error: error.message };
+        }
+        if (!data.user) {
+            return {
+                error: 'Check your inbox to confirm your email, then sign in.',
+            };
+        }
+
+        const { error: profileError } = await supabase.from('profiles').insert({
+            id: data.user.id,
+            display_name: displayName,
+            organization_id: organizationId,
+            role: 'learner',
+        });
+        if (profileError) {
+            return { error: profileError.message };
+        }
+        return { error: null };
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
     };
 
     return (
-        <AuthContext.Provider value={{ ...state, signIn, signOut }}>
+        <AuthContext.Provider
+            value={{ ...state, signIn, signUpLearner, signOut }}
+        >
             {children}
         </AuthContext.Provider>
     );

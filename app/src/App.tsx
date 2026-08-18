@@ -11,6 +11,7 @@ import { AuthProvider } from './utils/auth-context';
 import Home from './pages/home/home';
 import Lesson from './pages/lesson/lesson';
 import Login from './pages/login/login';
+import Signup from './pages/signup/signup';
 import AdminUpload from './pages/admin-upload/admin-upload';
 import Report from './pages/report/report';
 
@@ -20,6 +21,7 @@ const App = () => (
             <AppShell>
                 <Switch>
                     <Route exact path="/login" component={Login} />
+                    <Route exact path="/signup" component={Signup} />
                     <Route exact path="/">
                         <RequireRole allow={['learner']}>
                             <Home />
