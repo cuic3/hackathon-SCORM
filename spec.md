@@ -86,17 +86,17 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 
 **MUST NOT**: ever lose or mutate a recorded completion as a side effect of content management actions (re-upload, deactivate, reactivate, edit).
 
-### 3.5 Learner self-service signup (US-5, NEW — see A4)
+### 3.5 Learner self-service signup (US-5, NEW)
 | AC ID | Given | When | Then |
 |---|---|---|---|
 | US-5.1 | A prospective learner with no existing account | Submits the signup form with a valid email/password and picks an existing seeded organization | A new learner profile is created against that organization and they can subsequently log in |
 
-**Scope note (confirmed in scope — Claire Cui, 2026-08-18):** `/signup` is not exposed to the public — it is only used to create synthetic/seeded learner accounts against an existing seeded organization, the same category of data §4 already calls synthetic/seeded. It does not conflict with §4's rule; it's a path for producing that same seeded data, not a public-registration feature. See A4.
+**Scope addition — learner self-service signup (confirmed with Claire Cui, 2026-08-18):** `/signup` is not exposed to the public — it is only used to create synthetic/seeded learner accounts against an existing seeded organization, the same category of data §4 already calls synthetic/seeded. It does not conflict with §4's rule; it's a path for producing that same seeded data, not a public-registration feature. Also verified end-to-end: the live Supabase project requires email confirmation, and the confirmation email is delivered and the signup → confirm → login path works.
 
 ## 4. Business Rules (cross-cutting)
 - **MUST**: demonstrator is standalone — no dependency on / integration with real Clinical Learning Hub.
 - **MUST**: only SCORM 1.2 is supported (not 2004, not xAPI, not AICC).
-- **MUST**: all org/user/Elsevier-lesson data is synthetic/seeded. (§3.5/A4: learner self-service signup is not public-facing and only ever produces synthetic/seeded accounts against a seeded organization — confirmed consistent with this rule, not an exception to it.)
+- **MUST**: all org/user/Elsevier-lesson data is synthetic/seeded. (§3.5: learner self-service signup is not public-facing and only ever produces synthetic/seeded accounts against a seeded organization — confirmed consistent with this rule, not an exception to it.)
 - **MUST NOT**: fabricate a completion state or score that the package did not report (see Edge Cases, §5).
 - **MUST**: at every `metrics.md` checkpoint, log — tasks planned vs. completed; ACs currently passing; any scope/behavior deviation and whether `spec.md` was updated first; one thing AI got right; one thing a human had to fix; and (End of Event only) one concrete "what didn't work."
 
@@ -127,7 +127,6 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 | A1 | The supplied sample SCORM 1.2 package is treated as valid/supported for the P1 demo | Campbell Isherwood, Claire Cui | Supplied package cannot be parsed/launched per the SCORM 1.2 contract described |
 | A2 | The P1 sample package reports a score usable in the final report | Michelle Zuckerberg | Inspection shows no score is reported |
 | A3 | One learner completing one custom package is sufficient to prove the P1 loop | Rory Myers | Mentor/product clarification requires multiple learners/packages/assignments |
-| A4 | Learner self-service signup (§3.5, `/signup`) is in scope: it is not open to the public and only ever creates synthetic/seeded learner accounts against an existing seeded organization, the same category of data §4 already permits | Claire Cui | The signup path is ever exposed beyond seeded/demo use |
 
 ## 8. Edge Cases Checklist (implement handling for all of these)
 - [ ] Missing `imsmanifest.xml` → reject upload with clear error; nothing added.
@@ -139,7 +138,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 - [ ] A lesson (either origin) has no `package_id`/`launch_path` set → show a "content not yet available" placeholder; MUST NOT attempt to render an iframe or construct a SCORM adapter for it.
 - [ ] A custom lesson is uploaded with no source institution entered → displays as "Unknown", never blank; Elsevier-origin lessons never show a source institution value at all.
 - [ ] Admin replaces, reactivates, or edits a custom lesson → each action is logged as its own `content_audit_log` entry (`upload`+`previous_lesson_id` / `reactivate` / `edit`); a superseded lesson (already replaced) MUST NOT show a "Reactivate" option.
-- [x] A learner signs up via self-service signup (see A4) → email confirmation IS required by the live Supabase auth settings; verified end-to-end (Claire Cui) that the confirmation email is actually delivered and the signup→confirm→login path works, so this is not a blocker for the demo.
+- [x] A learner signs up via self-service signup (§3.5) → email confirmation IS required by the live Supabase auth settings; verified end-to-end (Claire Cui) that the confirmation email is actually delivered and the signup→confirm→login path works, so this is not a blocker for the demo.
 - [ ] A learner signs up via self-service signup → they need a matching `profiles` row created via an `auth.users` trigger (client code no longer inserts one directly, as of `054b3da`); this trigger isn't documented in `plan.md` §2.1 and isn't confirmed to exist on the live project — MUST be verified before relying on this path (see `plan.md` §2.10).
 
 ## 9. Verify Table
@@ -160,7 +159,7 @@ Filled in this session (2026-08-18) by re-testing every AC against the running s
 | US-4.3 | Replace content deactivates the old lesson, links to the new one, leaves existing completions untouched | PASS | Code read (`admin-upload.tsx:204-227`) matches the AC exactly: new row inserted with `replaces_lesson_id`, old row updated `is_active=false, superseded_by_lesson_id=<new>`, two audit rows written (`upload` with `previous_lesson_id`, `deactivate` with `reason: superseded`). Not yet exercised on the live DB this session (all `replaces_lesson_id`/`superseded_by_lesson_id` are currently null) — no automated re-test performed beyond code + existing `admin-upload.test.tsx` coverage (T21). |
 | US-4.4 | Reactivate restores a deactivated (non-superseded) lesson; superseded lessons never show Reactivate | PASS | Code read (`admin-upload.tsx:252-264, 543`) confirms the exact gating: `is_active` lessons get Edit/Replace/Deactivate; inactive+superseded get neither; inactive+not-superseded get Reactivate only. Live `content_audit_log` has zero `reactivate` actions — not yet exercised against the live DB this session, relying on code + `admin-upload.test.tsx` (T21). |
 | US-4.5 | Edit details updates metadata only, never package_id/launch_path | PASS | Code read (`admin-upload.tsx:281-319`) only ever updates `title`/`description`/`duration_minutes`; `package_id`/`launch_path` aren't in the update payload. Live `content_audit_log` has zero `edit` actions — not yet exercised against the live DB this session, relying on code + `admin-upload.test.tsx` (T21). |
-| US-5.1 | Self-service signup creates a learner profile and allows login | PASS | A4 confirmed in-scope (Claire Cui, 2026-08-18): `/signup` only ever produces synthetic/seeded accounts against a seeded organization, not public registration — consistent with §4, not an exception to it. Email confirmation is required by the live project and verified working end-to-end (Claire Cui) — see §8. This session's own live-DB check independently corroborates the mechanism: a real signed-up learner has a matching `profiles` row (via the `handle_new_learner_signup` trigger) and a confirmed email despite no SMTP being configured on this machine. No `signup.test.tsx` exists (only page in the app with zero automated coverage). |
+| US-5.1 | Self-service signup creates a learner profile and allows login | PASS | Confirmed in-scope (§3.5, Claire Cui, 2026-08-18): `/signup` only ever produces synthetic/seeded accounts against a seeded organization, not public registration — consistent with §4, not an exception to it. Email confirmation is required by the live project and verified working end-to-end (Claire Cui) — see §8. This session's own live-DB check independently corroborates the mechanism: a real signed-up learner has a matching `profiles` row (via the `handle_new_learner_signup` trigger) and a confirmed email despite no SMTP being configured on this machine. No `signup.test.tsx` exists (only page in the app with zero automated coverage). |
 
 ### 9.1 Additional ACs (added during spec refinement)
 These were introduced after the original verification table was drafted (login flows, resume, invalid-upload, no-score display, audit log) and never got folded back into a §3 Given/When/Then row. This section is §9's one deliberate exception to "every ID needs a §3 row" — an append-only home for ACs discovered after §3 was first drafted, not an invitation to skip writing the §3 row for new ACs going forward (US-2.5/US-4.3/US-4.4/US-4.5/US-5.1 above got real §3 rows; the ones below didn't and are grandfathered here instead of being backfilled, since backfilling them isn't worth the time on this clock).

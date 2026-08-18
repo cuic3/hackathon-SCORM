@@ -173,7 +173,7 @@ Per `spec.md` §3.1's scope note, the brief's underlying motivation is that many
 - `lesson_completions.source_institution_snapshot` — denormalized at completion-write time in `scorm-api-adapter.ts`, same rationale as `lesson_title_snapshot`/`lesson_origin_snapshot` (§2.1): the report reads completions, not a live join to `lessons`, so a lesson's source institution can't retroactively change a learner's historical report row.
 - Displayed in the admin's own lesson list (admin-upload.tsx) and as a "Source" column in the unified report (`report.tsx`), shown only for custom rows (Elsevier rows show `—`, since the concept doesn't apply to them).
 
-**Manual step required:** this needs a live schema migration (`alter table lessons add column source_institution text;` and `alter table lesson_completions add column source_institution_snapshot text;`) applied via the Supabase MCP tooling or dashboard SQL editor — not run yet as of this plan update, since this session has no live DB/MCP access. Code assumes the column exists; uploads/completions will fail until someone with access applies it.
+**Migration applied and verified (T23, resolved):** `alter table lessons add column source_institution text;` and `alter table lesson_completions add column source_institution_snapshot text;` have been run against the live project. Confirmed via `list_tables` and real data: "Cat Caretaking Basics" has `source_institution='Hackathon'` with a matching `source_institution_snapshot` on its completion row; other custom lessons with no institution entered correctly show `null` → "Unknown" in the UI.
 
 ### 2.9 Content lifecycle: Replace content / Reactivate / Edit details (US-4.3/4.4/4.5)
 
@@ -186,9 +186,9 @@ Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_l
 
 **Documentation gap this closes:** this feature was fully built (commit `275ed13`) before `spec.md` had any AC, edge case, or Verify row for it — flagged by review and fixed together with this plan.md write-up (see `spec.md` §3.4 US-4.3/4.4/4.5, §8, §9).
 
-### 2.10 Learner self-service signup (US-5.1 — in scope, see A4)
+### 2.10 Learner self-service signup (US-5.1 — in scope, see spec.md §3.5)
 
-`app/src/pages/signup/signup.tsx` + `auth-context.tsx`'s `signUpLearner`: a `/signup` route where a learner can create an account, picking from the existing seeded `organizations` list. Not exposed to the public — it only ever produces synthetic/seeded learner accounts against a seeded organization (`spec.md` §3.5/A4), so it doesn't conflict with the "accounts are synthetic/seeded" business rule (`spec.md` §4). As of the latest fix (`054b3da`), `display_name`/`organization_id` are passed as Supabase Auth user metadata (`supabase.auth.signUp({ ..., options: { data: {...} } })`) rather than inserted into `profiles` directly from the client — the client-side code no longer writes a `profiles` row itself at all.
+`app/src/pages/signup/signup.tsx` + `auth-context.tsx`'s `signUpLearner`: a `/signup` route where a learner can create an account, picking from the existing seeded `organizations` list. Not exposed to the public — it only ever produces synthetic/seeded learner accounts against a seeded organization (`spec.md` §3.5), so it doesn't conflict with the "accounts are synthetic/seeded" business rule (`spec.md` §4). As of the latest fix (`054b3da`), `display_name`/`organization_id` are passed as Supabase Auth user metadata (`supabase.auth.signUp({ ..., options: { data: {...} } })`) rather than inserted into `profiles` directly from the client — the client-side code no longer writes a `profiles` row itself at all.
 
 **This implies a `profiles`-row-creation trigger on `auth.users` now exists on the live Supabase project** (the standard pattern: a Postgres function reading `raw_user_meta_data`, fired `on insert` into `auth.users`) — **but no such trigger is documented in §2.1's schema block, and this session has no live DB access to confirm one actually exists.** If it doesn't, signup succeeds (creates an `auth.users` row) but the learner has no `profiles` row and nothing else in the app will work for them (every query joins through `profiles`). Someone with Supabase dashboard/MCP access should confirm this trigger exists and, if so, add it to §2.1.
 
@@ -216,7 +216,7 @@ Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_l
 ## Alignment Check
 - [x] The full P1 loop (login → upload → launch/complete → report) is built and covered by §2.1–§2.6, plus the later additions in §2.7–§2.10.
 - [x] Two ambiguities (demo/deploy target, seed credentials) were surfaced to the product owner rather than guessed, and resolved before finalizing this plan — see §1 and §3.
-- [x] §2.10 (learner self-service signup) is built and confirmed in-scope (`spec.md` A4) — not public-facing, only produces synthetic/seeded accounts.
+- [x] §2.10 (learner self-service signup) is built and confirmed in-scope (`spec.md` §3.5) — not public-facing, only produces synthetic/seeded accounts.
 
 ## 6. Build order / tasks (to also populate `tasks.md`)
 1. **Schema + seed** (§2.1) — no UI changes yet.
@@ -224,8 +224,8 @@ Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_l
 3. **Required edge cases** (spec §8): resume-from-bookmark verification, deactivate button + audit log, missing-manifest rejection message, admin-only audit log view.
 4. **Content lifecycle** (§2.9): Replace content / Reactivate / Edit details — DONE (`275ed13`); admin-only audit log *view* (surfacing `content_audit_log` in the UI) is still not built.
 5. **Elsevier real playback**: generalize the SCORM player to any origin with package content; author + backfill real Elsevier packages (see §2.7) — DONE.
-6. **Source institution tracking** (§2.8): apply the schema migration (**blocking — not yet run**), then the code is already wired.
-7. **Learner self-service signup** (§2.10): built and confirmed in-scope (A4) — DONE. The `profiles`-row-creation trigger on `auth.users` is still unverified against the live project.
+6. **Source institution tracking** (§2.8): DONE — migration applied and verified against live data.
+7. **Learner self-service signup** (§2.10): built and confirmed in-scope (spec.md §3.5) — DONE. The `profiles`-row-creation trigger on `auth.users` is still unverified against the live project.
 8. **Polish**: multiple learners/packages if time allows, upload UX polish.
 
 ## Verification
@@ -235,4 +235,4 @@ Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_l
 - `get_advisors` (Supabase MCP) after migration to catch any RLS/security lint issues.
 - Confirm a missing-`imsmanifest.xml` zip is rejected with the required error and creates nothing (check no `lessons`/Storage rows were written).
 - Confirm deactivating/re-uploading custom content leaves existing `lesson_completions` rows unchanged in the report (US-4.1), and that a superseded lesson never shows "Reactivate" (US-4.4).
-- Self-service signup (§2.10) is confirmed in-scope (A4) and email confirmation was verified working end-to-end; the `profiles`-row-creation trigger on `auth.users` still needs confirmation against the live project.
+- Self-service signup (§2.10) is confirmed in-scope (spec.md §3.5) and email confirmation was verified working end-to-end; the `profiles`-row-creation trigger on `auth.users` still needs confirmation against the live project.
