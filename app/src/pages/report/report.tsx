@@ -205,8 +205,7 @@ const Report = () => {
                         Completion report
                     </h1>
                     <p className={`${baseClassName}__subtitle`}>
-                        Elsevier and custom-content completions appear together here,
-                        with each record&rsquo;s origin clearly marked.
+                        Elsevier and custom-content completions appear together here.
                     </p>
                 </div>
                 <Button type="secondary" htmlType="button" onClick={handleExportCsv} disabled={loading}>

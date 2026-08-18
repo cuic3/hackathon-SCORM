@@ -57,8 +57,7 @@ const Home = () => {
                 My learning
             </h1>
             <h2 className={`${baseClassName}__subtitle`}>
-                Elsevier and custom content appear together here, with each
-                lesson&rsquo;s origin clearly marked.
+                Elsevier and custom content appear together here.
             </h2>
 
             {loading ? (

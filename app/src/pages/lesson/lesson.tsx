@@ -213,7 +213,7 @@ const Lesson = () => {
                     {lesson.title}
                 </h1>
                 {lesson.origin === 'custom' ? (
-                    <Badge content="Custom content" type="subtle" />
+                    <Badge content={lesson.source_institution ?? 'Custom'} type="subtle" />
                 ) : null}
             </div>
             <p className={`${baseClassName}__description`}>{lesson.description}</p>

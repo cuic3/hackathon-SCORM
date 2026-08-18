@@ -3,10 +3,11 @@
 
 ## Baseline
 - Team confidence using AI/spec-first ways of working (1–5):
-  - <name>: <n>
-  - <name>: <n>
-  - <name>: <n>
-- **Team average:** <n>
+  - <Michelle>: <4>
+  - <Clarie>: <4>
+  - <Campbell>: <4>
+  - <Rory>: <4>
+- **Team average:** <>
 
 ## Checkpoint 1 — end of Day 1 (2026-08-17, through commit `9f63f04` at 16:32)
 
@@ -33,11 +34,11 @@
 <!-- Repeat checkpoints as useful. -->
 
 ## End of Event
-- End confidence average: <n>
-- Confidence delta: <+/−n>
+- End confidence average: <4>
+- Confidence delta: <0>
 - Final Verify: <n> PASS / <n> FAIL
 - Tasks completed: <n> / <n>
-- Skills captured: <n>
-- One thing that did **not** work: <specific failure>
-- What we changed because of it: <...>
-- One pattern another team could reuse: <...>
+- Skills captured: <6>
+- One thing that did **not** work: <keeping tasks.md up to date>
+- What we changed because of it: <we added a skill with strict update rules>
+- One pattern another team could reuse: <task.md update skill>

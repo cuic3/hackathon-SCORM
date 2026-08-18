@@ -68,14 +68,19 @@ describe('LessonCard', () => {
         expect(screen.queryByText(/min$/)).not.toBeInTheDocument();
     });
 
-    it('shows a "Custom content" badge for custom-origin lessons', () => {
-        renderCard(makeLesson({ origin: 'custom' }), null);
-        expect(screen.getByText('Custom content')).toBeInTheDocument();
+    it('shows the source institution in the badge for custom-origin lessons', () => {
+        renderCard(makeLesson({ origin: 'custom', source_institution: 'Johns Hopkins Hospital' }), null);
+        expect(screen.getByText('Johns Hopkins Hospital')).toBeInTheDocument();
+    });
+
+    it('falls back to "Custom" when no source institution is set', () => {
+        renderCard(makeLesson({ origin: 'custom', source_institution: null }), null);
+        expect(screen.getByText('Custom')).toBeInTheDocument();
     });
 
     it('does not show a badge for elsevier-origin lessons', () => {
         renderCard(makeLesson({ origin: 'elsevier' }), null);
-        expect(screen.queryByText('Custom content')).not.toBeInTheDocument();
+        expect(screen.queryByText('Custom')).not.toBeInTheDocument();
     });
 
     it('shows "Not started" and "Launch lesson" when there is no completion row', () => {

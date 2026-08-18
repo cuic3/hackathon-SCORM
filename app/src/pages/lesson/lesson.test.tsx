@@ -118,10 +118,16 @@ describe('Lesson', () => {
         expect(screen.getByText('Learn the basics.')).toBeInTheDocument();
     });
 
-    it('shows a "Custom content" badge for custom-origin lessons', async () => {
+    it('shows a "Custom" badge for custom-origin lessons with no source institution', async () => {
         mockLessonFetch(lessonRow({ origin: 'custom' }));
         renderLesson();
-        await waitFor(() => expect(screen.getByText('Custom content')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Custom')).toBeInTheDocument());
+    });
+
+    it('shows the source institution in the badge for custom-origin lessons', async () => {
+        mockLessonFetch(lessonRow({ origin: 'custom', source_institution: 'Springfield General' }));
+        renderLesson();
+        await waitFor(() => expect(screen.getByText('Springfield General')).toBeInTheDocument());
     });
 
     it('shows the no-content placeholder and no Refresh button when the lesson has no package', async () => {
