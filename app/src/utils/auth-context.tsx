@@ -102,24 +102,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         displayName: string,
         organizationId: string
     ) => {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    display_name: displayName,
+                    organization_id: organizationId,
+                },
+            },
+        });
         if (error) {
             return { error: error.message };
         }
-        if (!data.user) {
+        if (!data.session) {
             return {
                 error: 'Check your inbox to confirm your email, then sign in.',
             };
-        }
-
-        const { error: profileError } = await supabase.from('profiles').insert({
-            id: data.user.id,
-            display_name: displayName,
-            organization_id: organizationId,
-            role: 'learner',
-        });
-        if (profileError) {
-            return { error: profileError.message };
         }
         return { error: null };
     };
