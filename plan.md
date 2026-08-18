@@ -20,7 +20,7 @@
 - `app/src/components/app-shell/` — page chrome (ELS `Header` + `Footer` + top nav), wraps every route.
 - `app/src/pages/home/` — lesson list ("My learning"), split into "Elsevier lessons" and "Custom lessons" sections. Maps to US-1 (custom lesson available, origin distinguishable) and US-3 (unified reporting view). Now reads from Supabase instead of mock data.
 - `app/src/pages/lesson/` — single-lesson view: real SCORM player (iframe + API adapter, see §2.4) for any lesson that has package content (`package_id`/`launch_path` set), regardless of origin; a "content not yet available" placeholder otherwise (see §2.7). Maps to US-2 (launch/complete) and US-4 (completion history display).
-- `app/src/components/lesson-card/` — shared card used by Home for both Elsevier and custom lessons; shows a "Custom content" badge when `origin === 'custom'`.
+- `app/src/components/lesson-card/` — shared card used by Home for both Elsevier and custom lessons; for `origin === 'custom'` shows the lesson's `source_institution` in the origin badge (falls back to "Custom" if unset — a deliberate learner-facing exception to the report/admin-upload's "Unknown" fallback, see `spec.md` §3.1).
 - `app/src/pages/admin-upload/` *(new)* — admin upload view: zip select → validate → parse manifest → upload to Storage → insert lesson row. See §2.3.
 - `app/src/pages/report/` *(new)* — nurse educator unified report view. See §2.6.
 - `app/src/pages/login/` *(new)* + `app/src/utils/auth-context.tsx` *(new)* — real Supabase Auth email/password login, session/profile context, route guards. See §2.5.

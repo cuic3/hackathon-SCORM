@@ -47,6 +47,8 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 
 **Scope addition — source institution (confirmed with Michelle Zuckerberg):** the brief's underlying motivation (§1) is that many different customer institutions each bring their own SCORM content — P1 simplified this to one seeded organization (A3), but a custom-uploaded lesson MAY additionally record which real institution it represents, as a free-text, admin-entered, display-only attribution (e.g. "Johns Hopkins Hospital"). This does not change A3 or require multiple real organizations/logins — it is a label on the lesson, not a data-model change to who can log in or what they can see. No source entered → displays as "Unknown". Only applies to `custom`-origin lessons; Elsevier-origin lessons don't show this field.
 
+**Scope carve-out — learner card fallback (confirmed with Rory Myers, 2026-08-18):** the learner's own lesson card (`lesson-card.tsx`) shows the source institution directly in its origin badge (in place of the generic "Custom content" label) but uses "Custom" — not "Unknown" — as its no-source fallback. This is a deliberate, learner-facing-only exception; the report (§3.3) and admin-upload views are unaffected and continue to show "Unknown" for no-source custom lessons.
+
 ### 3.2 Complete a lesson (US-2, P1)
 | AC ID | Given | When | Then |
 |---|---|---|---|

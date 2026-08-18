@@ -46,7 +46,7 @@ const LessonCard = ({ lesson, completion }: LessonWithCompletion) => {
                 <h3 className={`${baseClassName}__title`}>{lesson.title}</h3>
                 <div className={`${baseClassName}__header-meta`}>
                     {lesson.origin === 'custom' ? (
-                        <Badge content="Custom content" type="subtle" />
+                        <Badge content={lesson.source_institution ?? 'Custom'} type="subtle" />
                     ) : null}
                     {lesson.duration_minutes ? (
                         <span className={`${baseClassName}__duration`}>
