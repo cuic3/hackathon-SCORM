@@ -122,9 +122,9 @@ describe('LessonCard', () => {
         expect(screen.queryByText(/%/)).not.toBeInTheDocument();
     });
 
-    it('shows "Completed — no score reported" when finished with no score', () => {
+    it('shows "No score reported" (learner-facing, no "Completed —" prefix) when finished with no score', () => {
         renderCard(makeLesson(), makeCompletion({ status: 'completed', score_raw: null }));
-        expect(screen.getByText('Completed — no score reported')).toBeInTheDocument();
+        expect(screen.getByText('No score reported')).toBeInTheDocument();
     });
 
     it('links to the lesson detail route', () => {

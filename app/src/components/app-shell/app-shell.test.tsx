@@ -27,6 +27,7 @@ describe('AppShell', () => {
             profile: null,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderShell();
@@ -40,6 +41,7 @@ describe('AppShell', () => {
             profile: null,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderShell();
@@ -52,6 +54,7 @@ describe('AppShell', () => {
             profile: { display_name: 'Ada Lovelace', role: 'learner' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderShell();
@@ -65,6 +68,7 @@ describe('AppShell', () => {
             profile: { display_name: 'Admin User', role: 'admin' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderShell();
@@ -80,6 +84,7 @@ describe('AppShell', () => {
             profile: null,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderShell();
@@ -92,6 +97,7 @@ describe('AppShell', () => {
             profile: { display_name: 'Edu User', role: 'educator' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderShell();
@@ -108,6 +114,7 @@ describe('AppShell', () => {
             profile: { display_name: 'Ada Lovelace', role: 'learner' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut,
         });
         renderShell();

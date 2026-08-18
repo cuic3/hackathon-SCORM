@@ -141,6 +141,8 @@ Sequencing (avoids the async-load vs. synchronous-`LMSInitialize` race):
 
 Resume: the sample's own `doStart()` already reads `cmi.core.lesson_location` and prompts to resume via native `confirm()` — no SCO-side changes needed, just correct state-loading in the adapter (step 2 above).
 
+**Score display, learner-facing (US-2.5):** `app/src/utils/format-score.ts`'s `formatScoreCell` takes an `options.audience` param — `lesson.tsx` and `lesson-card.tsx` (the learner's own views) pass `{ audience: 'learner' }` and get `"No score reported"` for a finished-no-score lesson; `report.tsx` (the educator's unified report, §2.6) uses the default and gets `"Completed — no score reported"`. Same underlying state, deliberately different wording per audience — see `spec.md` §3.2/§3.3.
+
 ### 2.5 Auth & routing (new: `app/src/pages/login/`, `app/src/utils/auth-context.tsx`)
 - Real Supabase Auth email/password login (`supabase.auth.signInWithPassword`).
 - `AuthContext` (session + profile + loading) via `supabase.auth.onAuthStateChange`.
@@ -173,6 +175,30 @@ Per `spec.md` §3.1's scope note, the brief's underlying motivation is that many
 
 **Manual step required:** this needs a live schema migration (`alter table lessons add column source_institution text;` and `alter table lesson_completions add column source_institution_snapshot text;`) applied via the Supabase MCP tooling or dashboard SQL editor — not run yet as of this plan update, since this session has no live DB/MCP access. Code assumes the column exists; uploads/completions will fail until someone with access applies it.
 
+### 2.9 Content lifecycle: Replace content / Reactivate / Edit details (US-4.3/4.4/4.5)
+
+Built in `app/src/pages/admin-upload/admin-upload.tsx` on top of the `replaces_lesson_id`/`superseded_by_lesson_id` columns and `content_audit_log`'s `reactivate`/`edit` actions that already existed in the §2.1 schema but were unused until now:
+
+- **Replace content** (`startReplace`/`handleUpload`'s replace branch): reuses the upload form, pre-filled with the existing lesson's metadata. On submit, uploads the new package under a fresh `packageId` and inserts a **new** `lessons` row (`replaces_lesson_id` = old row's id); the old row gets `is_active=false, superseded_by_lesson_id=<new row>`. `content_audit_log` gets an `upload` action with `previous_lesson_id` set. Existing `lesson_completions` rows are never touched — they still point at the old (now-inactive) `lessons` row via denormalized snapshots, so the report is unaffected (US-4.3).
+- **Reactivate** (`handleReactivate`): sets `is_active=true` on a deactivated lesson and logs a `reactivate` audit action. Gated in the UI (`supersededBy ? null : <Button>Reactivate</Button>`) so a lesson that's been replaced can't be reactivated — only re-replaced (US-4.4).
+- **Edit details** (`startEdit`/`handleSaveEdit`): metadata-only (title/description/duration); never touches `package_id`/`launch_path`. Logs an `edit` audit action (US-4.5).
+- Lineage ("Replaces: ..." / "Replaced by: ...") shown in the admin's lesson list by looking up `replaces_lesson_id`/`superseded_by_lesson_id` against the already-loaded custom lesson list.
+
+**Documentation gap this closes:** this feature was fully built (commit `275ed13`) before `spec.md` had any AC, edge case, or Verify row for it — flagged by review and fixed together with this plan.md write-up (see `spec.md` §3.4 US-4.3/4.4/4.5, §8, §9).
+
+### 2.10 Learner self-service signup (US-5.1 — NOT a confirmed scope addition, see A4)
+
+`app/src/pages/signup/signup.tsx` + `auth-context.tsx`'s `signUpLearner`: a `/signup` route where anyone can create a learner account, picking from the existing seeded `organizations` list. As of the latest fix (`054b3da`), `display_name`/`organization_id` are passed as Supabase Auth user metadata (`supabase.auth.signUp({ ..., options: { data: {...} } })`) rather than inserted into `profiles` directly from the client — the client-side code no longer writes a `profiles` row itself at all.
+
+**This implies a `profiles`-row-creation trigger on `auth.users` now exists on the live Supabase project** (the standard pattern: a Postgres function reading `raw_user_meta_data`, fired `on insert` into `auth.users`) — **but no such trigger is documented in §2.1's schema block, and this session has no live DB access to confirm one actually exists.** If it doesn't, signup succeeds (creates an `auth.users` row) but the learner has no `profiles` row and nothing else in the app will work for them (every query joins through `profiles`). Someone with Supabase dashboard/MCP access should confirm this trigger exists and, if so, add it to §2.1.
+
+**This is flagged, not endorsed.** Unlike source institution (§2.8) and Elsevier real playback (§2.7), this landed with no scope note in `spec.md` before or during the build, and it sits in direct tension with the "accounts are synthetic/seeded" business rule (`spec.md` §4). Concrete risks, none verified yet:
+- The undocumented-trigger risk above.
+- If the live Supabase project requires email confirmation before login, self-signed-up users may never receive a confirmation email — no SMTP is configured for this demo (§2.1's seed-data note explains why seeded accounts bypass this via a direct `email_confirmed_at = now()` insert, which self-signup doesn't get).
+- It's an open door: any visitor to the running app can create an account, which may or may not be acceptable given the demo target is local `npm run dev` only (§1).
+
+Documented here so it's visible and testable, not silently shipped — see `spec.md` §3.5/A4 for the open-assumption tracking. Needs an explicit team decision, not a unilateral one from whoever's fixing docs.
+
 ## 3. Key Decisions
 - Built as a **separate standalone project** (`hackathon-SCORM/app`), not inside `ecl-neuron-app` — matches the spec's "standalone demonstrator" constraint and avoids touching the production CLH codebase.
 - Reused the **real** `@els/*` packages (not a hand-rolled copy of the tokens) since this machine already has Artifactory registry access — keeps the visual language authentic with minimal maintenance.
@@ -193,21 +219,25 @@ Per `spec.md` §3.1's scope note, the brief's underlying motivation is that many
 - Real SCORM runtime integration (imsmanifest.xml parsing, SCORM API adapter for completion/score) was the biggest remaining risk to the P1 demo as of the prior static-mockup phase — §2.1–§2.6 above is the concrete design to retire that risk; still unbuilt as of this plan update and the next thing to implement.
 
 ## Alignment Check
-- [x] The approach satisfies the current P1 acceptance criteria for the UI shell (US-1.2 origin distinguishability, US-3.2 origin marking) and now covers the full P1 loop on paper (US-1.1, US-1.4, US-2, US-3.1, US-3.3, US-4) via §2.1–§2.6 — not yet implemented as of this plan update.
-- [x] Nothing here contradicts `spec.md`.
+- [x] The full P1 loop (login → upload → launch/complete → report) is built and covered by §2.1–§2.6, plus the later additions in §2.7–§2.10.
 - [x] Two ambiguities (demo/deploy target, seed credentials) were surfaced to the product owner rather than guessed, and resolved before finalizing this plan — see §1 and §3.
+- [ ] **One exception to "nothing here contradicts spec.md":** §2.10 (learner self-service signup) is built but flagged, not confirmed — it's documented as an open assumption (`spec.md` A4), not asserted as aligned. Don't check this box until the team makes an explicit call on it.
 
 ## 6. Build order / tasks (to also populate `tasks.md`)
 1. **Schema + seed** (§2.1) — no UI changes yet.
 2. **Thin end-to-end loop** (demo-critical path): real login/route guards (§2.5) → admin upload, hardcoded to the one sample package first (§2.3) → content proxy plugin (§2.2) → SCORM adapter + lesson launch (§2.4) → persistence wiring → report page (§2.6). Manually verify the full loop once: admin uploads → learner completes → educator sees it next to seeded rows.
 3. **Required edge cases** (spec §8): resume-from-bookmark verification, deactivate button + audit log, missing-manifest rejection message, admin-only audit log view.
-4. **Polish**: full re-upload/replace flow, multiple learners/packages if time allows, upload UX polish.
-5. **Source institution tracking** (§2.8): apply the schema migration (blocking — not yet run), then the code is already wired.
-5. **Elsevier real playback**: generalize the SCORM player to any origin with package content; author + backfill real Elsevier packages (see §2.7).
+4. **Content lifecycle** (§2.9): Replace content / Reactivate / Edit details — DONE (`275ed13`); admin-only audit log *view* (surfacing `content_audit_log` in the UI) is still not built.
+5. **Elsevier real playback**: generalize the SCORM player to any origin with package content; author + backfill real Elsevier packages (see §2.7) — DONE.
+6. **Source institution tracking** (§2.8): apply the schema migration (**blocking — not yet run**), then the code is already wired.
+7. **Learner self-service signup** (§2.10): built, but **not yet confirmed as in-scope** — see A4. Needs a team decision before it counts as done rather than as a flagged risk.
+8. **Polish**: multiple learners/packages if time allows, upload UX polish.
 
 ## Verification
 - `cd app && npm install jszip && npm run dev` — run the actual local demo loop end-to-end: log in as each seeded role, upload the sample zip as admin, launch+complete it as learner (confirm real iframe-hosted SCORM content runs, not a placeholder), confirm suspend/resume works (exit mid-lesson, relaunch, confirm resume prompt), view the report as educator and confirm both seeded Elsevier rows and the new custom completion appear with correct origin/score formatting.
+- `cd app && npm test` — the Vitest suite (16 files, 190 tests as of this update). **Node version gotcha:** this machine's default `node` (Homebrew, on `PATH`) is v20.x; the test tooling (`jsdom`'s `undici`) requires Node ≥22.14/≥24 and hard-crashes on 20 with `webidl.util.markAsUncloneable is not a function`. Node 24 is available via `nvm`, but `nvm use 24` alone doesn't win against Homebrew's earlier `PATH` entry — run `export PATH="$HOME/.nvm/versions/node/v24.18.0/bin:$PATH"` first if `npm test` fails this way.
 - Re-test each AC in `spec.md` §9/§9.1 against the running system.
 - `get_advisors` (Supabase MCP) after migration to catch any RLS/security lint issues.
 - Confirm a missing-`imsmanifest.xml` zip is rejected with the required error and creates nothing (check no `lessons`/Storage rows were written).
-- Confirm deactivating/re-uploading custom content leaves existing `lesson_completions` rows unchanged in the report (US-4.1).
+- Confirm deactivating/re-uploading custom content leaves existing `lesson_completions` rows unchanged in the report (US-4.1), and that a superseded lesson never shows "Reactivate" (US-4.4).
+- Before treating self-service signup (§2.10) as demo-ready: confirm on the live Supabase project whether email confirmation is required, and get an explicit team call on whether it's in scope at all (A4).

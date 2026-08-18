@@ -47,6 +47,7 @@ describe('Home', () => {
             profile: null,
             loading: true,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         renderHome();
@@ -60,6 +61,7 @@ describe('Home', () => {
             profile: { id: 'learner-1' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         fromMock.mockImplementation((table: string) => {
@@ -82,6 +84,7 @@ describe('Home', () => {
             profile: { id: 'learner-1' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         fromMock.mockImplementation((table: string) => {
@@ -111,6 +114,7 @@ describe('Home', () => {
             profile: { id: 'learner-1' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         fromMock.mockImplementation((table: string) => {
@@ -137,6 +141,7 @@ describe('Home', () => {
             profile: { id: 'learner-1' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         fromMock.mockImplementation(() => createQueryBuilder({ data: [], error: null }));
@@ -153,6 +158,7 @@ describe('Home', () => {
             profile: { id: 'learner-1' } as never,
             loading: false,
             signIn: vi.fn(),
+            signUpLearner: vi.fn(),
             signOut: vi.fn(),
         });
         fromMock.mockImplementation(() =>

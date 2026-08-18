@@ -1,8 +1,9 @@
+@use 'sass:color';
 @use '@els/els-styleguide-core/scss/tools';
 @use '../../assets/styles/mixins' as *;
 
 .lesson-card {
-    height: 11rem;
+    height: 9rem;
 
     // The Card component wraps children in its own internal
     // .c-els-card__content > .c-els-card__content-inner divs, so our real
@@ -27,8 +28,23 @@
         @include display-flex;
         @include flex-direction(row);
         @include justify-content(space-between);
-        align-items: flex-start;
+        align-items: center;
         gap: 0.5rem;
+    }
+
+    &__header-meta {
+        @include display-flex;
+        @include flex-direction(row);
+        align-items: center;
+        gap: 0.5rem;
+        flex-shrink: 0;
+
+        // The Badge component is designed as a superscript-style flag and
+        // relatively offsets itself upward by default (`bottom: 0.5em`).
+        // That fights with centering it against plain text here, so reset it.
+        .c-els-badge {
+            bottom: 0;
+        }
     }
 
     &__title {
@@ -49,23 +65,10 @@
         overflow: hidden;
     }
 
-    &__meta {
-        @include display-flex;
-        @include flex-direction(row);
-        @include justify-content(space-between);
-        align-items: center;
-    }
-
     &__duration {
         color: tools.$els-color-n6;
         font-size: 0.875rem;
-    }
-
-    &__score {
-        margin: 0;
-        color: tools.$els-color-n6;
-        font-size: 0.875rem;
-        font-weight: 600;
+        white-space: nowrap;
     }
 
     &__footer {
@@ -74,6 +77,58 @@
         @include justify-content(space-between);
         align-items: center;
         gap: 0.5rem;
+    }
+
+    &__status-group {
+        @include display-flex;
+        @include flex-direction(row);
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    &__status-pill,
+    &__score-pill {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        line-height: 1.25;
+        white-space: nowrap;
+    }
+
+    // Hardcoded to match the old-branding "confirm-on-dark"/"alert" tokens
+    // (rgb(83, 184, 72) / #eb6500) used elsewhere in the app.
+    // This file's Sass module graph is compiled by Vite in isolation from
+    // base.scss's `$els-core-theme: old-branding` config, so referencing
+    // the tokens here resolves to their new-branding values instead.
+    $completed-color: rgb(83, 184, 72);
+    $failed-color: #eb6500;
+
+    &__status-pill {
+        border-radius: 999px;
+        color: tools.$els-color-text;
+        min-width: 7rem;
+        text-align: center;
+
+        &--not-started {
+            background-color: tools.$els-color-n3;
+        }
+
+        &--in-progress {
+            background-color: tools.$els-color-secondary-background;
+        }
+
+        &--completed {
+            background-color: $completed-color;
+        }
+
+        &--failed {
+            background-color: color.scale($failed-color, $lightness: 20%);
+        }
+    }
+
+    &__score-pill {
+        color: tools.$els-color-text;
     }
 
     &__launch-link {
