@@ -18,6 +18,14 @@ export interface FormatScoreOptions {
  * e.g. "78% (78/100)". A finished lesson with no reported score must never
  * show a blank/dash — see FormatScoreOptions for the exact wording per audience.
  */
+export function getScorePercent(raw: number, min: number | null, max: number | null): number {
+    const effectiveMin = min ?? 0;
+    const effectiveMax = max ?? 100;
+    return effectiveMax > effectiveMin
+        ? Math.round(((raw - effectiveMin) / (effectiveMax - effectiveMin)) * 100)
+        : Math.round(raw);
+}
+
 export function formatScoreCell(
     status: CompletionStatus | null | undefined,
     raw: number | null,
@@ -34,12 +42,6 @@ export function formatScoreCell(
             : 'Completed — no score reported';
     }
 
-    const effectiveMin = min ?? 0;
     const effectiveMax = max ?? 100;
-    const pct =
-        effectiveMax > effectiveMin
-            ? Math.round(((raw - effectiveMin) / (effectiveMax - effectiveMin)) * 100)
-            : Math.round(raw);
-
-    return `${pct}% (${raw}/${effectiveMax})`;
+    return `${getScorePercent(raw, min, max)}% (${raw}/${effectiveMax})`;
 }
