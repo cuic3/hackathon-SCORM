@@ -53,6 +53,9 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 | US-2.1 | A SCORM 1.2 lesson is available (custom-uploaded or seeded Elsevier content — see §3.3 scope update) | Learner launches it | The real SCORM lesson runs (real runtime, not a mock screen) |
 | US-2.2 | Learner completes the lesson; package reports completion + score | Session finishes | Completion and score are recorded for that learner |
 | US-2.5 | A lesson is finished but the package reported no score | Learner views their own lesson/profile view | Shows `"No score reported"` (no "Completed —" prefix, distinct from §3.3's report wording — the learner is already looking at their own completed lesson, so restating "Completed" is redundant) |
+| US-2.6 | A completed lesson reported a score below 70% | Learner views their available lessons list | The lesson shows a `"Failed"` status (distinct from `"Completed"`) instead of a passing completion, and the launch link reads `"Retake lesson"` instead of `"Review lesson"`, allowing the learner to relaunch it |
+
+**Scope addition — pass/fail threshold (confirmed with Rory Myers):** 70% of `cmi.core.score.raw` (scaled against `.min`/`.max`) is the passing bar for the demo. This applies only to the learner's own lesson-card display (`lesson-card.tsx`) — it does not change what's persisted (the actual reported score/status is still recorded as-is, per §4's "MUST NOT fabricate a completion state or score" rule) and does not add a new `lesson_completions.status` value; "Failed" is a display-only derivation (`score_raw < 70%` of an otherwise `completed` record), not a new stored state. The educator report (§3.3) is unaffected by this AC — it continues to show the raw score/status, not a Failed label.
 
 **Runtime contract (MUST implement, see §5 for full technical detail):**
 - Hosting app MUST expose a window-discoverable LMS API object the SCO can find and call (SCORM 1.2 API discovery convention).
@@ -137,6 +140,7 @@ Exact wording is an example, not necessarily verbatim-required, but MUST clearly
 - [ ] A custom lesson is uploaded with no source institution entered → displays as "Unknown", never blank; Elsevier-origin lessons never show a source institution value at all.
 - [ ] Admin replaces, reactivates, or edits a custom lesson → each action is logged as its own `content_audit_log` entry (`upload`+`previous_lesson_id` / `reactivate` / `edit`); a superseded lesson (already replaced) MUST NOT show a "Reactivate" option.
 - [ ] A learner signs up via self-service signup (see A4) whose account requires email confirmation → since no SMTP is configured for this demo (`plan.md` §2.1), they may never receive a confirmation email and be unable to log in; MUST be verified against the live Supabase auth settings before relying on this path in a demo.
+- [ ] A completed lesson scores below 70% → learner's lesson card shows `"Failed"` (not `"Completed"`) with a `"Retake lesson"` link; the underlying `lesson_completions` row/status is unchanged, and the educator report (§3.3) still shows the raw score, not a Failed label.
 - [ ] A learner signs up via self-service signup → they need a matching `profiles` row created via an `auth.users` trigger (client code no longer inserts one directly, as of `054b3da`); this trigger isn't documented in `plan.md` §2.1 and isn't confirmed to exist on the live project — MUST be verified before relying on this path (see `plan.md` §2.10).
 
 ## 9. Verify Table
@@ -149,6 +153,7 @@ Fill this in at feature freeze by re-testing every AC above against the running 
 | US-2.1 | Learner launches real SCORM content | PASS / FAIL | Verify against both a custom-uploaded lesson and a seeded Elsevier lesson (§3.3 scope update) |
 | US-2.2 | Completion and score are recorded | PASS / FAIL | |
 | US-2.5 | Learner's own view shows "No score reported" (no "Completed —") for a finished lesson with no score | PASS / FAIL | |
+| US-2.6 | Completed lesson scoring below 70% shows "Failed" + "Retake lesson" on the learner's lesson card; educator report unaffected | PASS / FAIL | |
 | US-3.1 | Elsevier + custom records appear together | PASS / FAIL | |
 | US-3.2 | Custom origin is marked in report | PASS / FAIL | |
 | US-3.3 | Completion + score visible in report | PASS / FAIL | |
