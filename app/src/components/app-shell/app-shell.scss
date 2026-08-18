@@ -7,6 +7,8 @@
     @include flex-direction(column);
 
     &__header {
+        border-bottom: tools.$els-thin-keyline-width solid tools.$els-color-divider;
+
         &__wordmark {
             font-weight: 700;
         }
